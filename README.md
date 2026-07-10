@@ -180,4 +180,4 @@ The product follows a **"Boutique Editorial"** visual direction: warm neutral ba
 
 ## License
 
-Private — internal project for generating and selling customized e-commerce websites.
+AI-powered SaaS platform for generating modern, customizable e-commerce websites with real-time preview and reusable templates
