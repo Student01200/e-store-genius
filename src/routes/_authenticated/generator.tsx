@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { StorefrontPreview } from "@/components/storefront-preview";
+import { generateStoreContent } from "@/lib/ai-generate.functions";
 import {
   CATEGORIES,
   CURRENCIES,
@@ -15,6 +17,15 @@ import {
   type StoreConfig,
   type TemplateId,
 } from "@/lib/store-config";
+
+function slugify(name: string) {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "store";
+}
 
 const searchSchema = z.object({ id: z.string().optional() });
 
