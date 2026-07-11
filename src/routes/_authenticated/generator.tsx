@@ -49,12 +49,43 @@ function Generator() {
   const [step, setStep] = useState(0);
   const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [saving, setSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const aiGenerate = useServerFn(generateStoreContent);
 
-  useEffect(() => {
-    if (!id) return;
-    supabase.from("stores").select("*").eq("id", id).single().then(({ data, error }) => {
-      if (error || !data) return;
-      setConfig({
+  async function runAi() {
+    if (!config.name.trim()) return toast.error("Enter a store name first.");
+    setAiLoading(true);
+    try {
+      const result = await aiGenerate({
+        data: {
+          name: config.name,
+          category: String(config.category),
+          description: config.description,
+          targetAudience: config.targetAudience,
+          designStyle: config.designStyle,
+          currency: config.currency,
+        },
+      });
+      setConfig((c) => ({
+        ...c,
+        tagline: result.tagline || c.tagline,
+        heroHeadline: result.heroHeadline || c.heroHeadline,
+        heroSubheadline: result.heroSubheadline || c.heroSubheadline,
+        productCategories: result.productCategories.length ? result.productCategories : c.productCategories,
+        products: result.products.length
+          ? result.products.map((p, i) => ({
+              ...p,
+              image: c.products[i % c.products.length]?.image,
+            }))
+          : c.products,
+      }));
+      toast.success("Content generated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "AI generation failed");
+    } finally {
+      setAiLoading(false);
+    }
+  }
         id: data.id,
         name: data.name,
         category: data.category,
