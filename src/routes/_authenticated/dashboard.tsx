@@ -6,6 +6,7 @@ import { currencySymbol } from "@/lib/store-config";
 
 type StoreRow = {
   id: string;
+  slug: string | null;
   name: string;
   category: string;
   template: string;
