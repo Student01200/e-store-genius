@@ -29,7 +29,7 @@ function Dashboard() {
   useEffect(() => {
     supabase
       .from("stores")
-      .select("id,name,category,template,status,currency,primary_color,secondary_color,updated_at")
+      .select("id,slug,name,category,template,status,currency,primary_color,secondary_color,updated_at")
       .order("updated_at", { ascending: false })
       .then(({ data, error }) => {
         if (error) toast.error(error.message);
@@ -53,7 +53,7 @@ function Dashboard() {
     if (insertErr) toast.error(insertErr.message);
     else {
       toast.success("Duplicated");
-      const { data } = await supabase.from("stores").select("id,name,category,template,status,currency,primary_color,secondary_color,updated_at").order("updated_at", { ascending: false });
+      const { data } = await supabase.from("stores").select("id,slug,name,category,template,status,currency,primary_color,secondary_color,updated_at").order("updated_at", { ascending: false });
       setStores(data ?? []);
     }
   }
