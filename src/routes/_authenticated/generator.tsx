@@ -133,6 +133,7 @@ function Generator() {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not signed in");
+      const baseSlug = slugify(config.name);
       const payload = {
         user_id: user.user.id,
         name: config.name,
@@ -159,16 +160,45 @@ function Generator() {
         social_facebook: config.socialFacebook,
         status,
       };
+      let storeId = config.id;
+      let storeSlug: string | null = null;
       if (config.id) {
-        const { error } = await supabase.from("stores").update(payload).eq("id", config.id);
+        const { data: updated, error } = await supabase
+          .from("stores")
+          .update(payload)
+          .eq("id", config.id)
+          .select("slug")
+          .single();
         if (error) throw error;
+        storeSlug = updated?.slug ?? null;
       } else {
-        const { data, error } = await supabase.from("stores").insert(payload).select("id").single();
+        // Ensure unique slug on first insert
+        let slug = baseSlug;
+        for (let i = 0; i < 3; i++) {
+          const { data: exists } = await supabase.from("stores").select("id").eq("slug", slug).maybeSingle();
+          if (!exists) break;
+          slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+        }
+        const { data, error } = await supabase
+          .from("stores")
+          .insert({ ...payload, slug } as never)
+          .select("id,slug")
+          .single();
         if (error) throw error;
-        setConfig((c) => ({ ...c, id: data!.id }));
+        storeId = data!.id;
+        storeSlug = data!.slug ?? null;
+        setConfig((c) => ({ ...c, id: storeId }));
       }
-      toast.success(status === "published" ? "Store published" : "Draft saved");
-      if (status === "published") navigate({ to: "/dashboard" });
+      if (status === "published" && storeSlug) {
+        const url = `${window.location.origin}/s/${storeSlug}`;
+        toast.success("Store published", {
+          description: url,
+          action: { label: "Open", onClick: () => window.open(url, "_blank") },
+        });
+        navigate({ to: "/dashboard" });
+      } else {
+        toast.success("Draft saved");
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Save failed");
     } finally {
