@@ -34,6 +34,7 @@ export type Database = {
           product_categories: Json
           products: Json
           secondary_color: string
+          slug: string | null
           social_facebook: string | null
           social_instagram: string | null
           social_twitter: string | null
@@ -63,6 +64,7 @@ export type Database = {
           product_categories?: Json
           products?: Json
           secondary_color?: string
+          slug?: string | null
           social_facebook?: string | null
           social_instagram?: string | null
           social_twitter?: string | null
@@ -92,6 +94,7 @@ export type Database = {
           product_categories?: Json
           products?: Json
           secondary_color?: string
+          slug?: string | null
           social_facebook?: string | null
           social_instagram?: string | null
           social_twitter?: string | null

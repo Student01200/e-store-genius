@@ -1,9 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { StorefrontPreview } from "@/components/storefront-preview";
+import { generateStoreContent } from "@/lib/ai-generate.functions";
 import {
   CATEGORIES,
   CURRENCIES,
@@ -15,6 +17,15 @@ import {
   type StoreConfig,
   type TemplateId,
 } from "@/lib/store-config";
+
+function slugify(name: string) {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60) || "store";
+}
 
 const searchSchema = z.object({ id: z.string().optional() });
 
@@ -38,6 +49,43 @@ function Generator() {
   const [step, setStep] = useState(0);
   const [device, setDevice] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [saving, setSaving] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const aiGenerate = useServerFn(generateStoreContent);
+
+  async function runAi() {
+    if (!config.name.trim()) return toast.error("Enter a store name first.");
+    setAiLoading(true);
+    try {
+      const result = await aiGenerate({
+        data: {
+          name: config.name,
+          category: String(config.category),
+          description: config.description,
+          targetAudience: config.targetAudience,
+          designStyle: config.designStyle,
+          currency: config.currency,
+        },
+      });
+      setConfig((c) => ({
+        ...c,
+        tagline: result.tagline || c.tagline,
+        heroHeadline: result.heroHeadline || c.heroHeadline,
+        heroSubheadline: result.heroSubheadline || c.heroSubheadline,
+        productCategories: result.productCategories.length ? result.productCategories : c.productCategories,
+        products: result.products.length
+          ? result.products.map((p, i) => ({
+              ...p,
+              image: c.products[i % c.products.length]?.image,
+            }))
+          : c.products,
+      }));
+      toast.success("Content generated");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "AI generation failed");
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -85,6 +133,7 @@ function Generator() {
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Not signed in");
+      const baseSlug = slugify(config.name);
       const payload = {
         user_id: user.user.id,
         name: config.name,
@@ -111,16 +160,45 @@ function Generator() {
         social_facebook: config.socialFacebook,
         status,
       };
+      let storeId = config.id;
+      let storeSlug: string | null = null;
       if (config.id) {
-        const { error } = await supabase.from("stores").update(payload).eq("id", config.id);
+        const { data: updated, error } = await supabase
+          .from("stores")
+          .update(payload)
+          .eq("id", config.id)
+          .select("slug")
+          .single();
         if (error) throw error;
+        storeSlug = updated?.slug ?? null;
       } else {
-        const { data, error } = await supabase.from("stores").insert(payload).select("id").single();
+        // Ensure unique slug on first insert
+        let slug = baseSlug;
+        for (let i = 0; i < 3; i++) {
+          const { data: exists } = await supabase.from("stores").select("id").eq("slug", slug).maybeSingle();
+          if (!exists) break;
+          slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+        }
+        const { data, error } = await supabase
+          .from("stores")
+          .insert({ ...payload, slug } as never)
+          .select("id,slug")
+          .single();
         if (error) throw error;
-        setConfig((c) => ({ ...c, id: data!.id }));
+        storeId = data!.id;
+        storeSlug = data!.slug ?? null;
+        setConfig((c) => ({ ...c, id: storeId }));
       }
-      toast.success(status === "published" ? "Store published" : "Draft saved");
-      if (status === "published") navigate({ to: "/dashboard" });
+      if (status === "published" && storeSlug) {
+        const url = `${window.location.origin}/s/${storeSlug}`;
+        toast.success("Store published", {
+          description: url,
+          action: { label: "Open", onClick: () => window.open(url, "_blank") },
+        });
+        navigate({ to: "/dashboard" });
+      } else {
+        toast.success("Draft saved");
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Save failed");
     } finally {
@@ -226,6 +304,19 @@ function Generator() {
                   className="w-full rounded-lg border border-ink/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-ink"
                 />
               </Field>
+              <div className="rounded-xl border border-dashed border-ink/20 bg-accent/10 p-4">
+                <p className="eyebrow">AI copywriter</p>
+                <p className="mt-1 text-xs text-ink/60">
+                  Draft a tagline, hero copy, categories and sample products from your brief.
+                </p>
+                <button
+                  onClick={runAi}
+                  disabled={aiLoading}
+                  className="mt-3 w-full rounded-full bg-ink px-4 py-2 text-xs font-semibold uppercase tracking-widest text-canvas hover:bg-ink/90 disabled:opacity-50"
+                >
+                  {aiLoading ? "Composing…" : "✧ Generate with AI"}
+                </button>
+              </div>
             </div>
           )}
 
