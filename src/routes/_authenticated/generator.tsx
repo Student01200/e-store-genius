@@ -304,6 +304,19 @@ function Generator() {
                   className="w-full rounded-lg border border-ink/10 bg-transparent px-3 py-2 text-sm outline-none focus:border-ink"
                 />
               </Field>
+              <div className="rounded-xl border border-dashed border-ink/20 bg-accent/10 p-4">
+                <p className="eyebrow">AI copywriter</p>
+                <p className="mt-1 text-xs text-ink/60">
+                  Draft a tagline, hero copy, categories and sample products from your brief.
+                </p>
+                <button
+                  onClick={runAi}
+                  disabled={aiLoading}
+                  className="mt-3 w-full rounded-full bg-ink px-4 py-2 text-xs font-semibold uppercase tracking-widest text-canvas hover:bg-ink/90 disabled:opacity-50"
+                >
+                  {aiLoading ? "Composing…" : "✧ Generate with AI"}
+                </button>
+              </div>
             </div>
           )}
 
