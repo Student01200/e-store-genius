@@ -140,6 +140,16 @@ function Dashboard() {
                       Delete
                     </button>
                   </div>
+                  {s.status === "published" && s.slug && (
+                    <a
+                      href={`/s/${s.slug}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 block truncate text-[10px] font-semibold uppercase tracking-widest text-ink/50 hover:text-ink"
+                    >
+                      ↗ /s/{s.slug}
+                    </a>
+                  )}
                 </div>
               </article>
             ))}
