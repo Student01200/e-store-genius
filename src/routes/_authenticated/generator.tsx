@@ -86,6 +86,12 @@ function Generator() {
       setAiLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!id) return;
+    supabase.from("stores").select("*").eq("id", id).single().then(({ data, error }) => {
+      if (error || !data) return;
+      setConfig({
         id: data.id,
         name: data.name,
         category: data.category,
