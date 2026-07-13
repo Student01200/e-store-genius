@@ -138,6 +138,8 @@ supabase/
 
 ## Database Schema
 
+### Current (shipped)
+
 Single table: **`public.stores`** — RLS enabled.
 
 | Column | Type | Notes |
@@ -150,19 +152,59 @@ Single table: **`public.stores`** — RLS enabled.
 | `primary_color`, `secondary_color`, `logo_url` | text | Branding |
 | `currency`, `language` | text | Localization |
 | `tagline`, `hero_headline`, `hero_subheadline` | text | Marketing copy (AI-fillable) |
-| `product_categories` | jsonb | `string[]` |
-| `products` | jsonb | `Product[]` |
+| `product_categories` | jsonb | `string[]` — legacy, catalog-in-store |
+| `products` | jsonb | `Product[]` — legacy, catalog-in-store |
 | `contact_email`, `contact_phone`, `contact_address` | text | Contact block |
 | `social_instagram`, `social_twitter`, `social_facebook` | text | Social links |
 | `status` | text | `draft` \| `published` |
 | `created_at`, `updated_at` | timestamptz | `update_updated_at_column()` trigger |
 
-**Row Level Security policies:**
-
+**RLS policies (live):**
 - `Users manage own stores` — `auth.uid() = user_id` for all operations.
 - `Anyone can view published stores` — `SELECT` for `anon` + `authenticated` when `status = 'published'`.
 
 Explicit `GRANT`s are issued to `authenticated` (full CRUD), `anon` (SELECT), and `service_role`.
+
+### Planned (relational e-commerce)
+
+The JSONB `products` / `product_categories` columns are a bootstrap shape. The next stage introduces proper relational tables. All new tables land in `public` with explicit GRANTs and RLS, and the JSONB path stays readable during the transition (loader falls back to JSONB when the relational catalog is empty).
+
+```text
+stores (existing)
+ ├── categories        (store_id, name, slug, position)
+ ├── products          (store_id, category_id?, name, slug, description,
+ │                      base_price, currency, status[draft|active|archived],
+ │                      seo fields)
+ │    ├── product_variants   (product_id, sku UNIQUE,
+ │    │                       price_override?, attributes jsonb)
+ │    ├── product_images     (product_id, url, alt, position, is_primary)
+ │    └── inventory          (variant_id UNIQUE, quantity,
+ │                            reserved_quantity, low_stock_threshold)
+ ├── customers        (store_id, user_id?, email, name, phone,
+ │                     addresses jsonb)
+ └── orders           (store_id, customer_id, status[pending|confirmed|
+      │                preparing|shipped|delivered|cancelled],
+      │                currency, subtotal, tax_total, shipping_total,
+      │                grand_total, shipping_address, billing_address)
+      └── order_items (order_id, variant_id, product_snapshot jsonb,
+                       unit_price, quantity, line_total)
+```
+
+Design rules:
+- Money as `numeric(12,2)`; every monetary row carries `currency`.
+- `slug` unique **per store** — `UNIQUE (store_id, slug)`.
+- Inventory tracked per **variant**; each product seeds a default variant.
+- Time-dependent invariants (e.g. `reserved_quantity <= quantity`) enforced with triggers, not CHECK constraints.
+- Cross-table ownership checks go through a `SECURITY DEFINER` helper `public.owns_store(_store_id uuid)` to avoid recursive RLS.
+
+**Planned RLS matrix:**
+
+| Table | Store owner | Anon / customer |
+| --- | --- | --- |
+| `categories`, `products`, `product_variants`, `product_images` | Full CRUD when `owns_store(store_id)` | `SELECT` when parent `store.status='published'` AND `product.status='active'` |
+| `inventory` | Owner read/write only | No direct row access; exposed as `in_stock: boolean` via a SECURITY DEFINER function |
+| `customers` | Owner reads own store's customers | Customer reads own row (`user_id = auth.uid()`) |
+| `orders`, `order_items` | Owner reads/writes for own store | Customer reads own orders |
 
 ---
 
@@ -187,7 +229,7 @@ Server function: `src/lib/ai-generate.functions.ts` → `generateStoreContent`.
 - **Error handling:** 429 → "AI is busy", 402 → "AI credits exhausted", other failures surface a generic message.
 - **Trigger:** "Generate with AI" button on Step 1 of the wizard, once name + category + description are set.
 
-The API key (`LOVABLE_API_KEY`) is read inside the handler and never reaches the client.
+The API key (`LOVABLE_API_KEY`) is read inside the handler and never reaches the client. When the relational catalog ships, a companion `seedProductsFromAI` server fn will translate the AI payload into `categories` + `products` + a default variant + zero-stock inventory rows — the AI call itself does not change.
 
 ---
 
@@ -262,9 +304,9 @@ Managed automatically by Lovable Cloud — no manual setup required.
 
 ## Security
 
-Currently implemented:
+**Currently implemented:**
 
-- **Row Level Security** on `public.stores` — users only see and mutate their own rows; only `published` rows are visible anonymously.
+- **Row Level Security** on `public.stores` — users only see/mutate their own rows; only `published` rows are visible anonymously.
 - **Explicit GRANTs** per role (`anon`, `authenticated`, `service_role`) — no implicit PostgREST exposure.
 - **Zod input validation** on every `createServerFn` handler.
 - **Server-only secrets** — `LOVABLE_API_KEY` and service-role credentials are read inside handlers and never bundled to the client.
@@ -272,28 +314,68 @@ Currently implemented:
 - **Protected route boundary** — `_authenticated` layout redirects before child loaders execute.
 - **SSR-safe error/notFound boundaries** on the public storefront route.
 
+**Planned for the e-commerce stage:**
+
+- **Per-table RLS matrix** (see Database Schema) with a `public.owns_store(_store_id)` SECURITY DEFINER helper to avoid recursive policies.
+- **Inventory never leaks to anon** — public API returns only `in_stock: boolean`, never raw quantities.
+- **Storage bucket policies** — a `product-images` bucket with owner-only write, public-read for published-store products.
+- **Signed upload URLs** for product images (short-lived, owner-scoped).
+- **Order state machine** enforced by trigger, not client input, so statuses can only transition along the allowed graph.
+- **Signature-verified webhooks** — future `api/public/webhooks/stripe.ts` will HMAC-verify the payload before any DB write, per the `/api/public/*` rules.
+- **PII discipline** — customer rows never exposed via anon SELECT; owner reads scoped through `owns_store`.
+
 ---
 
-## Roadmap (Not Yet Implemented)
+## Roadmap
 
-Explicitly **not** in the current codebase — noted here as candidates for future work:
+The generator + public catalog surface is shipping today. The next evolution turns Atelier from a storefront generator into a real e-commerce platform. Rollout is phased and non-breaking — existing stores keep rendering from JSONB until they're migrated.
 
-- 🛒 **Real cart & checkout** — Storefronts today are marketing/catalog only; no add-to-cart, payments, or orders.
-- 💳 **Payment integration** — Stripe / Paddle wiring, tax, invoicing.
-- 📦 **Inventory & order management** — Stock levels, fulfillment, order history.
-- 🖼️ **Media uploads** — Logo and product images are currently URLs only; no Supabase Storage bucket for user assets.
-- 🏷️ **Custom domains per store** — Storefronts live at `/s/:slug`; no per-store domain mapping.
-- 👤 **Full user profile** — Only auth session today; no avatar / display-name / preferences.
-- ✉️ **Transactional email** — Order confirmations, password reset customization.
-- 🌐 **Real i18n** — Language selector persists to config but UI strings aren't translated.
-- 📊 **Store analytics** — Views, conversions, best-selling products per store.
-- 🧩 **More templates & sections** — Blog, FAQ, testimonials, lookbook, size guides.
-- 🤝 **Team / multi-seat** — Sharing a store across collaborators.
-- 🔍 **SEO tooling per store** — Sitemap, canonical URLs, structured product data (JSON-LD).
-- 🧪 **Automated tests** — No test suite is set up yet.
+### Phase 1 — Product Management
+- New tables: `categories`, `products`, `product_variants`, `product_images`.
+- Supabase Storage bucket `product-images` with owner-only write.
+- Owner CRUD UI under `/stores/:storeId/products` (list, create, edit, delete, reorder, image upload, SKU, variants).
+- Migration helper `public.migrate_store_catalog(store_id)` backfills existing JSONB catalogs.
+- `StorefrontPreview` gains a `catalog` prop; loader prefers relational rows, falls back to JSONB.
+
+### Phase 2 — Inventory Management
+- `inventory` table per variant (`quantity`, `reserved_quantity`, `low_stock_threshold`).
+- `adjust_inventory(variant_id, delta, reason)` RPC with row-level locking.
+- Low-stock alerts on the dashboard.
+- Automatic decrement on order confirmation, restock on cancellation.
+
+### Phase 3 — Customer Shopping Experience
+- Client cart in `localStorage`, keyed by store slug.
+- Server-side price + stock revalidation before checkout.
+- Public product-detail route `/s/:slug/p/:productSlug`, cart route, checkout route.
+- `customers` table with optional `user_id` link; guest checkout allowed.
+- Signed-in customers get an account order history at `/account/orders`.
+
+### Phase 4 — Order Management
+- `orders` + `order_items` with six-state enum (`pending`, `confirmed`, `preparing`, `shipped`, `delivered`, `cancelled`).
+- Owner dashboard: filters, status transitions, order timeline.
+- Trigger-enforced state machine.
+- Stripe webhook route `api/public/webhooks/stripe.ts` (signature-verified) for payment + fulfillment events.
+
+### Phase 5 — Business Management
+- Customer history per store.
+- Analytics dashboard: revenue by day, top products, AOV, conversion.
+- Sales reports with CSV export (server fn).
+- Consolidated store settings page.
+
+### Beyond the e-commerce stage
+- 🖼️ Media uploads for logos + hero images (same Storage bucket pattern).
+- 🏷️ Custom domains per store.
+- 👤 Full user profiles (avatar, display name, preferences).
+- ✉️ Transactional email (order confirmations, receipts).
+- 🌐 Real i18n — translated UI strings, not just per-store language flag.
+- 🧩 More templates & sections (blog, FAQ, testimonials, lookbook).
+- 🤝 Team / multi-seat store ownership.
+- 🔍 SEO tooling per store — sitemap, canonical URLs, product JSON-LD.
+- 🧪 Automated test suite.
 
 ---
 
 ## License
 
 Proprietary — portfolio / demo project.
+
