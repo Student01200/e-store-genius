@@ -167,39 +167,56 @@ Explicit `GRANT`s are issued to `authenticated` (full CRUD), `anon` (SELECT), an
 
 ### Planned (relational e-commerce)
 
-Planned (relational e-commerce)
-
 The JSONB products / product_categories columns are a bootstrap shape. The next stage introduces a proper relational catalog system. The migration will be incremental and non-breaking: existing stores continue working with JSONB until they are migrated.
 
 Initial relational layer:
 
 stores (existing)
- ├── categories        (store_id, name, slug, position)
- └── products          (store_id, category_id?, name, slug, description,
-                        base_price, currency, status[draft|active|archived],
-                        seo fields)
+├── categories
+│ └── store_id, name, slug, position
+│
+└── products
+└── store_id, category_id?, name, slug, description,
+base_price, currency,
+status[draft|active|archived],
+seo fields
 
-Future e-commerce extensions:
+
+Future relational e-commerce extensions:
+
 
 products
- ├── product_variants   (product_id, sku UNIQUE,
- │                       price_override?, attributes jsonb)
- ├── product_images     (product_id, url, alt, position, is_primary)
- └── inventory          (variant_id UNIQUE, quantity,
-                         reserved_quantity, low_stock_threshold)
+├── product_variants
+│ └── product_id, sku UNIQUE,
+│ price_override?, attributes jsonb
+│
+├── product_images
+│ └── product_id, url, alt, position, is_primary
+│
+└── inventory
+└── variant_id UNIQUE, quantity,
+reserved_quantity, low_stock_threshold
+
 
 Business entities:
 
- ├── customers          (store_id, user_id?, email, name, phone,
- │                       addresses jsonb)
- └── orders             (store_id, customer_id, status[pending|confirmed|
-                          preparing|shipped|delivered|cancelled],
-                          currency, subtotal, tax_total,
-                          shipping_total, grand_total,
-                          shipping_address, billing_address)
-      └── order_items    (order_id, variant_id, product_snapshot jsonb,
-                          unit_price, quantity, line_total)
-                          
+
+customers
+└── store_id, user_id?, email, name, phone,
+addresses jsonb
+
+orders
+├── store_id, customer_id, status[pending|confirmed|
+│ preparing|shipped|delivered|cancelled],
+│ currency, subtotal, tax_total,
+│ shipping_total, grand_total,
+│ shipping_address, billing_address
+│
+└── order_items
+└── order_id, variant_id,
+product_snapshot jsonb,
+unit_price, quantity, line_total
+
 Design rules:
 
 - Money uses numeric(12,2); every monetary row carries currency.
@@ -243,7 +260,7 @@ Server function: `src/lib/ai-generate.functions.ts` → `generateStoreContent`.
 - **Error handling:** 429 → "AI is busy", 402 → "AI credits exhausted", other failures surface a generic message.
 - **Trigger:** "Generate with AI" button on Step 1 of the wizard, once name + category + description are set.
 
-The API key (`LOVABLE_API_KEY`) is read inside the handler and never reaches the client. When the relational catalog ships, a companion `seedProductsFromAI` server fn will translate the AI payload into `categories` + `products` + a default variant + zero-stock inventory rows — the AI call itself does not change.
+The API key (`LOVABLE_API_KEY`) is read inside the handler and never reaches the client. When the relational catalog ships, a companion seedProductsFromAI server fn will translate the AI payload into relational categories and products. Product variants and inventory seeding will be introduced in later phases.
 
 ---
 
@@ -336,7 +353,6 @@ Managed automatically by Lovable Cloud — no manual setup required.
 - Product image storage bucket with owner-only write.
 - Public read access only for published-store products.
 - Signed upload URLs for owner-scoped uploads.
-- **Signed upload URLs** for product images (short-lived, owner-scoped).
 - **Order state machine** enforced by trigger, not client input, so statuses can only transition along the allowed graph.
 - **Signature-verified webhooks** — future `api/public/webhooks/stripe.ts` will HMAC-verify the payload before any DB write, per the `/api/public/*` rules.
 - **PII discipline** — customer rows never exposed via anon SELECT; owner reads scoped through `owns_store`.
