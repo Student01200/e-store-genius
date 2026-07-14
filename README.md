@@ -179,7 +179,7 @@ stores (existing)
     └── store_id, category_id?, name, slug, description,
         base_price, currency,
         status [draft | active | archived],
-        seo fields
+        seo_title, seo_description
 
 Future relational e-commerce extensions:
 
@@ -195,7 +195,12 @@ products
 └── inventory
     └── variant_id UNIQUE, quantity,
         reserved_quantity, low_stock_threshold
-
+        
+Relationships:
+- A product has many product_variants.
+- A product has many product_images.
+- A product_variant has one inventory record.
+        
 Business entities:
 
 
@@ -429,6 +434,20 @@ Deferred to later phases:
 - 🤝 Team / multi-seat store ownership.
 - 🔍 SEO tooling per store — sitemap, canonical URLs, product JSON-LD.
 - 🧪 Automated test suite.
+
+## Project Status
+
+MVP completed:
+- AI storefront generation
+- Authentication
+- Store publishing
+- Public storefront rendering
+
+Next milestones:
+- Relational catalog
+- Inventory
+- Checkout
+- Orders
 
 ---
 
