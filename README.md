@@ -173,30 +173,28 @@ Initial relational layer:
 
 stores (existing)
 ├── categories
-│ └── store_id, name, slug, position
+│   └── store_id, name, slug, position
 │
 └── products
-└── store_id, category_id?, name, slug, description,
-base_price, currency,
-status[draft|active|archived],
-seo fields
-
+    └── store_id, category_id?, name, slug, description,
+        base_price, currency,
+        status [draft | active | archived],
+        seo fields
 
 Future relational e-commerce extensions:
 
 
 products
 ├── product_variants
-│ └── product_id, sku UNIQUE,
-│ price_override?, attributes jsonb
+│   └── product_id, sku UNIQUE,
+│       price_override?, attributes jsonb
 │
 ├── product_images
-│ └── product_id, url, alt, position, is_primary
+│   └── product_id, url, alt, position, is_primary
 │
 └── inventory
-└── variant_id UNIQUE, quantity,
-reserved_quantity, low_stock_threshold
-
+    └── variant_id UNIQUE, quantity,
+        reserved_quantity, low_stock_threshold
 
 Business entities:
 
@@ -361,7 +359,9 @@ Managed automatically by Lovable Cloud — no manual setup required.
 
 ## Roadmap
 
-The generator + public catalog surface is shipping today. The next evolution turns Atelier from a storefront generator into a real e-commerce platform. Rollout is phased and non-breaking — existing stores keep rendering from JSONB until they're migrated.
+The storefront generator and public storefront experience are currently implemented.
+The next evolution turns Atelier from an AI-powered storefront generator into a complete e-commerce platform with relational product management, inventory, customer accounts, and order processing.
+Development will be delivered in phased, non-breaking iterations — existing stores will continue rendering from JSONB data until they are migrated to the new relational architecture.
 
 ### Phase 1 — Product Management
 Goal: Replace the JSONB catalog with a safe relational product catalog.
