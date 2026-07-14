@@ -14,8 +14,119 @@ export type Database = {
   }
   public: {
     Tables: {
+      categories: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          slug: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          slug: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          slug?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "categories_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          base_price: number
+          category_id: string | null
+          created_at: string
+          currency: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          position: number
+          seo_description: string | null
+          seo_title: string | null
+          sku: string | null
+          slug: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          base_price?: number
+          category_id?: string | null
+          created_at?: string
+          currency: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          position?: number
+          seo_description?: string | null
+          seo_title?: string | null
+          sku?: string | null
+          slug: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          base_price?: number
+          category_id?: string | null
+          created_at?: string
+          currency?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          position?: number
+          seo_description?: string | null
+          seo_title?: string | null
+          sku?: string | null
+          slug?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
+          catalog_source: string | null
           category: string
           contact_address: string | null
           contact_email: string | null
@@ -46,6 +157,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          catalog_source?: string | null
           category: string
           contact_address?: string | null
           contact_email?: string | null
@@ -76,6 +188,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          catalog_source?: string | null
           category?: string
           contact_address?: string | null
           contact_email?: string | null
@@ -112,7 +225,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      owns_store: { Args: { _store_id: string }; Returns: boolean }
+      store_is_published: { Args: { _store_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
