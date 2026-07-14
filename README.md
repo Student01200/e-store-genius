@@ -167,36 +167,50 @@ Explicit `GRANT`s are issued to `authenticated` (full CRUD), `anon` (SELECT), an
 
 ### Planned (relational e-commerce)
 
-The JSONB `products` / `product_categories` columns are a bootstrap shape. The next stage introduces proper relational tables. All new tables land in `public` with explicit GRANTs and RLS, and the JSONB path stays readable during the transition (loader falls back to JSONB when the relational catalog is empty).
+Planned (relational e-commerce)
 
-```text
+The JSONB products / product_categories columns are a bootstrap shape. The next stage introduces a proper relational catalog system. The migration will be incremental and non-breaking: existing stores continue working with JSONB until they are migrated.
+
+Initial relational layer:
+
 stores (existing)
  ├── categories        (store_id, name, slug, position)
- ├── products          (store_id, category_id?, name, slug, description,
- │                      base_price, currency, status[draft|active|archived],
- │                      seo fields)
- │    ├── product_variants   (product_id, sku UNIQUE,
- │    │                       price_override?, attributes jsonb)
- │    ├── product_images     (product_id, url, alt, position, is_primary)
- │    └── inventory          (variant_id UNIQUE, quantity,
- │                            reserved_quantity, low_stock_threshold)
- ├── customers        (store_id, user_id?, email, name, phone,
- │                     addresses jsonb)
- └── orders           (store_id, customer_id, status[pending|confirmed|
-      │                preparing|shipped|delivered|cancelled],
-      │                currency, subtotal, tax_total, shipping_total,
-      │                grand_total, shipping_address, billing_address)
-      └── order_items (order_id, variant_id, product_snapshot jsonb,
-                       unit_price, quantity, line_total)
-```
+ └── products          (store_id, category_id?, name, slug, description,
+                        base_price, currency, status[draft|active|archived],
+                        seo fields)
 
+Future e-commerce extensions:
+
+products
+ ├── product_variants   (product_id, sku UNIQUE,
+ │                       price_override?, attributes jsonb)
+ ├── product_images     (product_id, url, alt, position, is_primary)
+ └── inventory          (variant_id UNIQUE, quantity,
+                         reserved_quantity, low_stock_threshold)
+
+Business entities:
+
+ ├── customers          (store_id, user_id?, email, name, phone,
+ │                       addresses jsonb)
+ └── orders             (store_id, customer_id, status[pending|confirmed|
+                          preparing|shipped|delivered|cancelled],
+                          currency, subtotal, tax_total,
+                          shipping_total, grand_total,
+                          shipping_address, billing_address)
+      └── order_items    (order_id, variant_id, product_snapshot jsonb,
+                          unit_price, quantity, line_total)
+                          
 Design rules:
-- Money as `numeric(12,2)`; every monetary row carries `currency`.
-- `slug` unique **per store** — `UNIQUE (store_id, slug)`.
-- Inventory tracked per **variant**; each product seeds a default variant.
-- Time-dependent invariants (e.g. `reserved_quantity <= quantity`) enforced with triggers, not CHECK constraints.
-- Cross-table ownership checks go through a `SECURITY DEFINER` helper `public.owns_store(_store_id uuid)` to avoid recursive RLS.
 
+- Money uses numeric(12,2); every monetary row carries currency.
+- Slugs are unique per store: UNIQUE (store_id, slug).
+- Inventory will be tracked per variant in a future phase.
+- Each product will eventually have a default variant.
+- Time-dependent invariants (for example reserved_quantity <= quantity)
+  will be enforced with triggers, not CHECK constraints.
+- Cross-table ownership checks use a SECURITY DEFINER helper
+  public.owns_store(_store_id uuid) to avoid recursive RLS.
+  
 **Planned RLS matrix:**
 
 | Table | Store owner | Anon / customer |
@@ -318,7 +332,10 @@ Managed automatically by Lovable Cloud — no manual setup required.
 
 - **Per-table RLS matrix** (see Database Schema) with a `public.owns_store(_store_id)` SECURITY DEFINER helper to avoid recursive policies.
 - **Inventory never leaks to anon** — public API returns only `in_stock: boolean`, never raw quantities.
-- **Storage bucket policies** — a `product-images` bucket with owner-only write, public-read for published-store products.
+- **Future storage policies** :
+- Product image storage bucket with owner-only write.
+- Public read access only for published-store products.
+- Signed upload URLs for owner-scoped uploads.
 - **Signed upload URLs** for product images (short-lived, owner-scoped).
 - **Order state machine** enforced by trigger, not client input, so statuses can only transition along the allowed graph.
 - **Signature-verified webhooks** — future `api/public/webhooks/stripe.ts` will HMAC-verify the payload before any DB write, per the `/api/public/*` rules.
@@ -331,11 +348,35 @@ Managed automatically by Lovable Cloud — no manual setup required.
 The generator + public catalog surface is shipping today. The next evolution turns Atelier from a storefront generator into a real e-commerce platform. Rollout is phased and non-breaking — existing stores keep rendering from JSONB until they're migrated.
 
 ### Phase 1 — Product Management
-- New tables: `categories`, `products`, `product_variants`, `product_images`.
-- Supabase Storage bucket `product-images` with owner-only write.
-- Owner CRUD UI under `/stores/:storeId/products` (list, create, edit, delete, reorder, image upload, SKU, variants).
-- Migration helper `public.migrate_store_catalog(store_id)` backfills existing JSONB catalogs.
-- `StorefrontPreview` gains a `catalog` prop; loader prefers relational rows, falls back to JSONB.
+Goal: Replace the JSONB catalog with a safe relational product catalog.
+
+Implementation:
+
+- Add relational tables:
+  - categories
+  - products
+
+- Keep existing JSONB columns working during migration.
+- Add migration helper:
+  public.migrate_store_catalog(store_id)
+  to backfill existing JSONB products/categories.
+
+- Add owner CRUD:
+  - Create products
+  - Edit products
+  - Delete products
+  - Manage categories
+  - Reorder catalog items
+
+- Update StorefrontPreview to support relational catalog data.
+- Keep JSONB as fallback until migration is complete.
+
+Deferred to later phases:
+
+- Product variants
+- Product images
+- Inventory
+- Stock management
 
 ### Phase 2 — Inventory Management
 - `inventory` table per variant (`quantity`, `reserved_quantity`, `low_stock_threshold`).
