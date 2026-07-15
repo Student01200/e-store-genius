@@ -165,7 +165,7 @@ Single table: **`public.stores`** — RLS enabled.
 
 Explicit `GRANT`s are issued to `authenticated` (full CRUD), `anon` (SELECT), and `service_role`.
 
-### Planned (relational e-commerce)
+### Relational e-commerce migration architecture
 
 The JSONB products / product_categories columns are a bootstrap shape. The next stage introduces a proper relational catalog system. The migration will be incremental and non-breaking: existing stores continue working with JSONB until they are migrated.
 
@@ -370,7 +370,7 @@ Development will be delivered in phased, non-breaking iterations — existing st
 
 ### Phase 1 — Product Management
 
-Status: **In progress**. Database foundation, catalog server functions, and the owner-facing Product Management UI are implemented. JSONB catalog remains the source of truth for storefront rendering until per-store migration ships.
+Status: **Completed** — migration and advanced catalog features remain planned
 
 Implemented:
 
@@ -437,6 +437,7 @@ MVP completed:
 - Authentication
 - Store publishing
 - Public storefront rendering
+- Relational product management foundation
 
 Next milestones:
 - Relational catalog
