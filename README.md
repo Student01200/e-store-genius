@@ -369,35 +369,30 @@ The next evolution turns Atelier from an AI-powered storefront generator into a 
 Development will be delivered in phased, non-breaking iterations — existing stores will continue rendering from JSONB data until they are migrated to the new relational architecture.
 
 ### Phase 1 — Product Management
-Goal: Replace the JSONB catalog with a safe relational product catalog.
 
-Implementation:
+Status: **In progress**. Database foundation, catalog server functions, and the owner-facing Product Management UI are implemented. JSONB catalog remains the source of truth for storefront rendering until per-store migration ships.
 
-- Add relational tables:
-  - categories
-  - products
+Implemented:
 
-- Keep existing JSONB columns working during migration.
-- Add migration helper:
-  public.migrate_store_catalog(store_id)
-  to backfill existing JSONB products/categories.
+- Relational tables `public.categories` and `public.products` with RLS scoped through `owns_store` / `store_is_published`.
+- Server functions in `src/lib/`:
+  - `categories.functions.ts` — list / create / update / reorder / delete
+  - `products.functions.ts` — list / get / create / update / setStatus / delete
+  - `public-catalog.functions.ts` — publishable-key read for public storefronts
+- Product Management UI under `/stores/$storeId/products`:
+  - Products table with product image, name, category, price, status badge, SKU, and edit action
+  - Search (name / SKU / slug) and filters (status, category)
+  - Clickable rows navigate to the edit page
+  - `New Product` and `Edit Product` pages sharing a single `ProductForm` component covering name, slug (auto-generated from name), description, price, currency, category, SKU, status, image URL with live preview, and SEO meta title / description
+  - Loading skeletons, empty states, error states, and success/error toast notifications
 
-- Add owner CRUD:
-  - Create products
-  - Edit products
-  - Delete products
-  - Manage categories
-  - Reorder catalog items
+Deferred to later Phase 1 sub-steps or later phases:
 
-- Update StorefrontPreview to support relational catalog data.
-- Keep JSONB as fallback until migration is complete.
+- JSONB → relational backfill (`migrate_store_catalog`) and storefront reads switching to `catalog_source = 'relational'`
+- Direct file upload to storage (current form takes an image URL)
+- Inventory quantity, stock tracking, and product variants
+- Multi-image galleries
 
-Deferred to later phases:
-
-- Product variants
-- Product images
-- Inventory
-- Stock management
 
 ### Phase 2 — Inventory Management
 - `inventory` table per variant (`quantity`, `reserved_quantity`, `low_stock_threshold`).
