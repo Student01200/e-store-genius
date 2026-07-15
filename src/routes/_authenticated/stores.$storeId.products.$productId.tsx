@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -6,249 +6,153 @@ import {
   updateProduct,
   deleteProduct,
 } from "@/lib/products.functions";
+import { listCategories } from "@/lib/categories.functions";
+import {
+  ProductForm,
+  emptyProductForm,
+  type CategoryOption,
+  type ProductFormValues,
+} from "@/components/products/ProductForm";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute(
-  "/_authenticated/stores/$storeId/products/$productId"
+  "/_authenticated/stores/$storeId/products/$productId",
 )({
   component: EditProductPage,
 });
 
-
 function EditProductPage() {
-  const { productId, storeId } = Route.useParams();
+  const { storeId, productId } = Route.useParams();
   const navigate = useNavigate();
 
+  const [initial, setInitial] = useState<ProductFormValues | null>(null);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
-  const [form, setForm] = useState({
-    name: "",
-    description: "",
-    basePrice: 0,
-    currency: "USD",
-    sku: "",
-    status: "draft" as "draft" | "active" | "archived",
-    imageUrl: "",
-  });
-
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    async function load() {
-      try {
-        const product = await getProduct({
-          data: {
-            id: productId,
-          },
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    Promise.all([
+      getProduct({ data: { id: productId } }),
+      listCategories({ data: { storeId } }),
+    ])
+      .then(([p, c]: any) => {
+        if (cancelled) return;
+        if (!p) throw new Error("Product not found");
+        setInitial({
+          ...emptyProductForm,
+          name: p.name ?? "",
+          slug: p.slug ?? "",
+          description: p.description ?? "",
+          basePrice: Number(p.base_price ?? 0),
+          currency: p.currency ?? "USD",
+          categoryId: p.category_id ?? "",
+          sku: p.sku ?? "",
+          status: p.status,
+          imageUrl: p.image_url ?? "",
+          seoTitle: p.seo_title ?? "",
+          seoDescription: p.seo_description ?? "",
         });
-
-        if (!product) {
-          throw new Error("Product not found");
-        }
-
-        setForm({
-          name: product.name,
-          description: product.description ?? "",
-          basePrice: Number(product.base_price),
-          currency: product.currency,
-          sku: product.sku ?? "",
-          status: product.status,
-          imageUrl: product.image_url ?? "",
-        });
-
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : "Failed loading product"
+        setCategories(
+          (c as any[]).map((x) => ({ id: x.id, name: x.name })),
         );
-      } finally {
-        setLoading(false);
-      }
-    }
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : "Failed to load product");
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [productId, storeId]);
 
-    load();
-  }, [productId]);
-
-
-  function update(
-    key: keyof typeof form,
-    value: string | number
-  ) {
-    setForm((prev) => ({
-      ...prev,
-      [key]: value,
-    }));
-  }
-
-
-  async function save(e: React.FormEvent) {
-    e.preventDefault();
-
+  async function handleSubmit(values: ProductFormValues) {
     setSaving(true);
-
     try {
       await updateProduct({
         data: {
           id: productId,
-          name: form.name,
-          description: form.description,
-          basePrice: Number(form.basePrice),
-          currency: form.currency,
-          sku: form.sku || null,
-          status: form.status,
-          imageUrl: form.imageUrl || null,
+          name: values.name,
+          slug: values.slug,
+          description: values.description || null,
+          basePrice: Number(values.basePrice),
+          currency: values.currency,
+          status: values.status,
+          categoryId: values.categoryId || null,
+          sku: values.sku || null,
+          imageUrl: values.imageUrl || null,
+          seoTitle: values.seoTitle || null,
+          seoDescription: values.seoDescription || null,
         },
       });
-
       toast.success("Product updated");
-
-      navigate({
-        to: "/stores/$storeId/products",
-        params: {
-          storeId,
-        },
-      });
-
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed updating product"
-      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update");
     } finally {
       setSaving(false);
     }
   }
 
-
-  async function remove() {
-    if (!confirm("Delete this product?")) return;
-
+  async function handleDelete() {
+    if (!confirm("Delete this product? This cannot be undone.")) return;
+    setDeleting(true);
     try {
-      await deleteProduct({
-        data: {
-          id: productId,
-        },
-      });
-
+      await deleteProduct({ data: { id: productId } });
       toast.success("Product deleted");
-
-      navigate({
-        to: "/stores/$storeId/products",
-        params: {
-          storeId,
-        },
-      });
-
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Failed deleting product"
-      );
+      navigate({ to: "/stores/$storeId/products", params: { storeId } });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete");
+      setDeleting(false);
     }
   }
 
-
-  if (loading) {
-    return (
-      <p className="text-sm text-ink/40">
-        Loading product...
-      </p>
-    );
-  }
-
-
   return (
-    <div className="max-w-xl">
-
-      <h2 className="mb-6 font-serif text-2xl italic">
-        Edit Product
-      </h2>
-
-
-      <form
-        onSubmit={save}
-        className="space-y-4 rounded-xl bg-white p-6 ring-1 ring-black/5"
-      >
-
-        <input
-          value={form.name}
-          onChange={(e) =>
-            update("name", e.target.value)
-          }
-          className="w-full rounded-lg border p-3"
-          placeholder="Product name"
-        />
-
-
-        <textarea
-          value={form.description}
-          onChange={(e) =>
-            update("description", e.target.value)
-          }
-          className="w-full rounded-lg border p-3"
-          placeholder="Description"
-        />
-
-
-        <input
-          type="number"
-          value={form.basePrice}
-          onChange={(e) =>
-            update(
-              "basePrice",
-              Number(e.target.value)
-            )
-          }
-          className="w-full rounded-lg border p-3"
-          placeholder="Price"
-        />
-
-
-        <select
-          value={form.status}
-          onChange={(e) =>
-            update(
-              "status",
-              e.target.value
-            )
-          }
-          className="w-full rounded-lg border p-3"
+    <div className="max-w-2xl">
+      <div className="mb-6">
+        <Link
+          to="/stores/$storeId/products"
+          params={{ storeId }}
+          className="text-xs uppercase tracking-widest text-ink/50 hover:text-ink"
         >
-          <option value="draft">
-            Draft
-          </option>
+          ← Back to products
+        </Link>
+        <h2 className="mt-2 font-serif text-2xl italic">Edit Product</h2>
+      </div>
 
-          <option value="active">
-            Active
-          </option>
-
-          <option value="archived">
-            Archived
-          </option>
-
-        </select>
-
-
-        <button
-          disabled={saving}
-          className="rounded-full bg-ink px-6 py-3 text-xs font-semibold uppercase tracking-widest text-canvas"
-        >
-          {saving ? "Saving..." : "Save Changes"}
-        </button>
-
-
-        <button
-          type="button"
-          onClick={remove}
-          className="rounded-full border border-red-200 px-6 py-3 text-xs font-semibold uppercase tracking-widest text-red-600"
-        >
-          Delete Product
-        </button>
-
-      </form>
-
+      {loading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-48 w-full" />
+          <Skeleton className="h-48 w-full" />
+        </div>
+      ) : error ? (
+        <div className="rounded-xl bg-white p-8 ring-1 ring-black/5 text-center">
+          <p className="text-sm text-red-600">{error}</p>
+          <Link
+            to="/stores/$storeId/products"
+            params={{ storeId }}
+            className="mt-4 inline-block text-xs uppercase tracking-widest text-ink/60 hover:text-ink"
+          >
+            Back to products
+          </Link>
+        </div>
+      ) : initial ? (
+        <ProductForm
+          initial={initial}
+          categories={categories}
+          submitLabel="Save Changes"
+          saving={saving}
+          onSubmit={handleSubmit}
+          onDelete={handleDelete}
+          deleting={deleting}
+        />
+      ) : null}
     </div>
   );
 }
