@@ -17,6 +17,11 @@ import { Route as AuthenticatedTemplatesRouteImport } from './routes/_authentica
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedGeneratorRouteImport } from './routes/_authenticated/generator'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedStoresStoreIdRouteImport } from './routes/_authenticated/stores.$storeId'
+import { Route as AuthenticatedStoresStoreIdCategoriesRouteImport } from './routes/_authenticated/stores.$storeId.categories'
+import { Route as AuthenticatedStoresStoreIdProductsIndexRouteImport } from './routes/_authenticated/stores.$storeId.products.index'
+import { Route as AuthenticatedStoresStoreIdProductsNewRouteImport } from './routes/_authenticated/stores.$storeId.products.new'
+import { Route as AuthenticatedStoresStoreIdProductsProductIdRouteImport } from './routes/_authenticated/stores.$storeId.products.$productId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -57,6 +62,36 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedStoresStoreIdRoute =
+  AuthenticatedStoresStoreIdRouteImport.update({
+    id: '/stores/$storeId',
+    path: '/stores/$storeId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedStoresStoreIdCategoriesRoute =
+  AuthenticatedStoresStoreIdCategoriesRouteImport.update({
+    id: '/categories',
+    path: '/categories',
+    getParentRoute: () => AuthenticatedStoresStoreIdRoute,
+  } as any)
+const AuthenticatedStoresStoreIdProductsIndexRoute =
+  AuthenticatedStoresStoreIdProductsIndexRouteImport.update({
+    id: '/products/',
+    path: '/products/',
+    getParentRoute: () => AuthenticatedStoresStoreIdRoute,
+  } as any)
+const AuthenticatedStoresStoreIdProductsNewRoute =
+  AuthenticatedStoresStoreIdProductsNewRouteImport.update({
+    id: '/products/new',
+    path: '/products/new',
+    getParentRoute: () => AuthenticatedStoresStoreIdRoute,
+  } as any)
+const AuthenticatedStoresStoreIdProductsProductIdRoute =
+  AuthenticatedStoresStoreIdProductsProductIdRouteImport.update({
+    id: '/products/$productId',
+    path: '/products/$productId',
+    getParentRoute: () => AuthenticatedStoresStoreIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -66,6 +101,11 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/templates': typeof AuthenticatedTemplatesRoute
   '/s/$slug': typeof SSlugRoute
+  '/stores/$storeId': typeof AuthenticatedStoresStoreIdRouteWithChildren
+  '/stores/$storeId/categories': typeof AuthenticatedStoresStoreIdCategoriesRoute
+  '/stores/$storeId/products/$productId': typeof AuthenticatedStoresStoreIdProductsProductIdRoute
+  '/stores/$storeId/products/new': typeof AuthenticatedStoresStoreIdProductsNewRoute
+  '/stores/$storeId/products/': typeof AuthenticatedStoresStoreIdProductsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -75,6 +115,11 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/templates': typeof AuthenticatedTemplatesRoute
   '/s/$slug': typeof SSlugRoute
+  '/stores/$storeId': typeof AuthenticatedStoresStoreIdRouteWithChildren
+  '/stores/$storeId/categories': typeof AuthenticatedStoresStoreIdCategoriesRoute
+  '/stores/$storeId/products/$productId': typeof AuthenticatedStoresStoreIdProductsProductIdRoute
+  '/stores/$storeId/products/new': typeof AuthenticatedStoresStoreIdProductsNewRoute
+  '/stores/$storeId/products': typeof AuthenticatedStoresStoreIdProductsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,6 +131,11 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/templates': typeof AuthenticatedTemplatesRoute
   '/s/$slug': typeof SSlugRoute
+  '/_authenticated/stores/$storeId': typeof AuthenticatedStoresStoreIdRouteWithChildren
+  '/_authenticated/stores/$storeId/categories': typeof AuthenticatedStoresStoreIdCategoriesRoute
+  '/_authenticated/stores/$storeId/products/$productId': typeof AuthenticatedStoresStoreIdProductsProductIdRoute
+  '/_authenticated/stores/$storeId/products/new': typeof AuthenticatedStoresStoreIdProductsNewRoute
+  '/_authenticated/stores/$storeId/products/': typeof AuthenticatedStoresStoreIdProductsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,6 +147,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/templates'
     | '/s/$slug'
+    | '/stores/$storeId'
+    | '/stores/$storeId/categories'
+    | '/stores/$storeId/products/$productId'
+    | '/stores/$storeId/products/new'
+    | '/stores/$storeId/products/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -106,6 +161,11 @@ export interface FileRouteTypes {
     | '/settings'
     | '/templates'
     | '/s/$slug'
+    | '/stores/$storeId'
+    | '/stores/$storeId/categories'
+    | '/stores/$storeId/products/$productId'
+    | '/stores/$storeId/products/new'
+    | '/stores/$storeId/products'
   id:
     | '__root__'
     | '/'
@@ -116,6 +176,11 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/templates'
     | '/s/$slug'
+    | '/_authenticated/stores/$storeId'
+    | '/_authenticated/stores/$storeId/categories'
+    | '/_authenticated/stores/$storeId/products/$productId'
+    | '/_authenticated/stores/$storeId/products/new'
+    | '/_authenticated/stores/$storeId/products/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -183,14 +248,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/stores/$storeId': {
+      id: '/_authenticated/stores/$storeId'
+      path: '/stores/$storeId'
+      fullPath: '/stores/$storeId'
+      preLoaderRoute: typeof AuthenticatedStoresStoreIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/stores/$storeId/categories': {
+      id: '/_authenticated/stores/$storeId/categories'
+      path: '/categories'
+      fullPath: '/stores/$storeId/categories'
+      preLoaderRoute: typeof AuthenticatedStoresStoreIdCategoriesRouteImport
+      parentRoute: typeof AuthenticatedStoresStoreIdRoute
+    }
+    '/_authenticated/stores/$storeId/products/': {
+      id: '/_authenticated/stores/$storeId/products/'
+      path: '/products'
+      fullPath: '/stores/$storeId/products/'
+      preLoaderRoute: typeof AuthenticatedStoresStoreIdProductsIndexRouteImport
+      parentRoute: typeof AuthenticatedStoresStoreIdRoute
+    }
+    '/_authenticated/stores/$storeId/products/new': {
+      id: '/_authenticated/stores/$storeId/products/new'
+      path: '/products/new'
+      fullPath: '/stores/$storeId/products/new'
+      preLoaderRoute: typeof AuthenticatedStoresStoreIdProductsNewRouteImport
+      parentRoute: typeof AuthenticatedStoresStoreIdRoute
+    }
+    '/_authenticated/stores/$storeId/products/$productId': {
+      id: '/_authenticated/stores/$storeId/products/$productId'
+      path: '/products/$productId'
+      fullPath: '/stores/$storeId/products/$productId'
+      preLoaderRoute: typeof AuthenticatedStoresStoreIdProductsProductIdRouteImport
+      parentRoute: typeof AuthenticatedStoresStoreIdRoute
+    }
   }
 }
+
+interface AuthenticatedStoresStoreIdRouteChildren {
+  AuthenticatedStoresStoreIdCategoriesRoute: typeof AuthenticatedStoresStoreIdCategoriesRoute
+  AuthenticatedStoresStoreIdProductsProductIdRoute: typeof AuthenticatedStoresStoreIdProductsProductIdRoute
+  AuthenticatedStoresStoreIdProductsNewRoute: typeof AuthenticatedStoresStoreIdProductsNewRoute
+  AuthenticatedStoresStoreIdProductsIndexRoute: typeof AuthenticatedStoresStoreIdProductsIndexRoute
+}
+
+const AuthenticatedStoresStoreIdRouteChildren: AuthenticatedStoresStoreIdRouteChildren =
+  {
+    AuthenticatedStoresStoreIdCategoriesRoute:
+      AuthenticatedStoresStoreIdCategoriesRoute,
+    AuthenticatedStoresStoreIdProductsProductIdRoute:
+      AuthenticatedStoresStoreIdProductsProductIdRoute,
+    AuthenticatedStoresStoreIdProductsNewRoute:
+      AuthenticatedStoresStoreIdProductsNewRoute,
+    AuthenticatedStoresStoreIdProductsIndexRoute:
+      AuthenticatedStoresStoreIdProductsIndexRoute,
+  }
+
+const AuthenticatedStoresStoreIdRouteWithChildren =
+  AuthenticatedStoresStoreIdRoute._addFileChildren(
+    AuthenticatedStoresStoreIdRouteChildren,
+  )
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedGeneratorRoute: typeof AuthenticatedGeneratorRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTemplatesRoute: typeof AuthenticatedTemplatesRoute
+  AuthenticatedStoresStoreIdRoute: typeof AuthenticatedStoresStoreIdRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -198,6 +323,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedGeneratorRoute: AuthenticatedGeneratorRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTemplatesRoute: AuthenticatedTemplatesRoute,
+  AuthenticatedStoresStoreIdRoute: AuthenticatedStoresStoreIdRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -212,3 +338,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
