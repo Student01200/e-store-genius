@@ -18,13 +18,35 @@ export const getPublicStore = createServerFn({ method: "GET" })
 
     const { data: store, error } = await supabase
       .from("stores")
-      .select(
-        "id,slug,name,category,tagline,hero_headline,hero_subheadline,primary_color,secondary_color,logo_url,currency,language,template,design_style,product_categories,products,contact_email,contact_phone,contact_address,social_instagram,social_twitter,social_facebook,description",
-      )
+      .select("*")
       .eq("slug", data.slug)
       .eq("status", "published")
-      .maybeSingle();
+      .single();
 
     if (error) throw error;
-    return store;
+
+    const { data: categories, error: categoryError } = await supabase
+      .from("categories")
+      .select("id, name, slug, position")
+      .eq("store_id", store.id)
+      .order("position");
+
+    if (categoryError) throw categoryError;
+
+    const { data: products, error: productError } = await supabase
+      .from("products")
+      .select(
+        "id, name, slug, base_price, currency, image_url, description, category_id, sku, position"
+      )
+      .eq("store_id", store.id)
+      .eq("status", "active")
+      .order("position");
+
+    if (productError) throw productError;
+
+    return {
+      ...store,
+      categories: categories ?? [],
+      products: products ?? [],
+    }
   });

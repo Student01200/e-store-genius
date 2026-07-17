@@ -68,8 +68,21 @@ function PublicStorePage() {
     tagline: store.tagline ?? "",
     heroHeadline: store.hero_headline ?? "",
     heroSubheadline: store.hero_subheadline ?? "",
-    productCategories: (store.product_categories as unknown as string[]) ?? [],
-    products: (store.products as unknown as StoreConfig["products"]) ?? [],
+
+    productCategories:
+      store.categories?.map((category) => category.name) ?? [],
+
+    products:
+      store.products?.map((product) => ({
+        id: product.id,
+        name: product.name,
+        price: Number(product.base_price),
+        image: product.image_url ?? undefined,
+        category:
+          store.categories?.find(
+            (c) => c.id === product.category_id
+          )?.name ?? undefined,
+      })) ?? [],
     contactEmail: store.contact_email ?? "",
     contactPhone: store.contact_phone ?? "",
     contactAddress: store.contact_address ?? "",
