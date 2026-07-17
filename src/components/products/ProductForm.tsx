@@ -151,7 +151,7 @@ export function ProductForm({
       </section>
 
       <section className="rounded-xl bg-white p-6 ring-1 ring-black/5 space-y-4">
-        <h3 className="eyebrow">Pricing & inventory</h3>
+        <h3 className="eyebrow">Pricing & availability</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="price">Price</Label>
