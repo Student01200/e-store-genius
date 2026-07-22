@@ -15,14 +15,20 @@ const COVERS: Record<TemplateId, string> = {
 };
 
 export const Route = createFileRoute("/_authenticated/templates")({
-  head: () => ({ meta: [{ title: "Templates · Atelier" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "Templates · Atelier" }, { name: "robots", content: "noindex" }],
+  }),
   component: Templates,
 });
 
 function Templates() {
   const [selected, setSelected] = useState<TemplateId>("luxury");
   const previewConfig = useMemo(
-    () => ({ ...defaultStoreConfig(), name: TEMPLATES.find((t) => t.id === selected)!.name, template: selected }),
+    () => ({
+      ...defaultStoreConfig(),
+      name: TEMPLATES.find((t) => t.id === selected)!.name,
+      template: selected,
+    }),
     [selected],
   );
 
@@ -54,7 +60,12 @@ function Templates() {
                 }`}
               >
                 <div className="aspect-[16/9] overflow-hidden">
-                  <img src={COVERS[t.id]} alt={t.name} loading="lazy" className="h-full w-full object-cover" />
+                  <img
+                    src={COVERS[t.id]}
+                    alt={t.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
                 </div>
                 <div className="p-4">
                   <div className="flex items-center justify-between">
@@ -62,7 +73,9 @@ function Templates() {
                     {active && <span className="eyebrow text-accent">Selected</span>}
                   </div>
                   <p className="mt-1 text-xs text-ink/60">{t.tagline}</p>
-                  <p className="mt-2 text-[10px] uppercase tracking-widest text-ink/40">Best for {t.best}</p>
+                  <p className="mt-2 text-[10px] uppercase tracking-widest text-ink/40">
+                    Best for {t.best}
+                  </p>
                 </div>
               </button>
             );

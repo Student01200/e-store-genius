@@ -1,4 +1,5 @@
 export type DesignStyle = "luxury" | "minimal" | "modern" | "creative" | "professional";
+export type BrandPersonality = "elegant" | "premium" | "professional" | "creative" | "playful" | "minimalist";
 export type TemplateId = "luxury" | "minimal" | "modern" | "marketplace";
 
 export type BusinessCategory =
@@ -17,6 +18,7 @@ export interface Product {
   price: number;
   image?: string;
   category?: string;
+  description?: string;
 }
 
 export interface StoreConfig {
@@ -25,7 +27,8 @@ export interface StoreConfig {
   category: BusinessCategory | string;
   description: string;
   targetAudience: string;
-  designStyle: DesignStyle;
+  designStyle: DesignStyle; // Legacy/DB field
+  brandPersonality: BrandPersonality;
   template: TemplateId;
   primaryColor: string;
   secondaryColor: string;
@@ -86,6 +89,15 @@ export const CATEGORIES: BusinessCategory[] = [
   "Home",
 ];
 
+export const BRAND_PERSONALITIES: { id: BrandPersonality; label: string }[] = [
+  { id: "elegant", label: "Elegant" },
+  { id: "premium", label: "Premium" },
+  { id: "professional", label: "Professional" },
+  { id: "creative", label: "Creative" },
+  { id: "playful", label: "Playful" },
+  { id: "minimalist", label: "Minimalist" },
+];
+
 export const DESIGN_STYLES: { id: DesignStyle; label: string }[] = [
   { id: "luxury", label: "Luxury" },
   { id: "minimal", label: "Minimal" },
@@ -100,10 +112,30 @@ export const TEMPLATES: {
   tagline: string;
   best: string;
 }[] = [
-  { id: "luxury", name: "Maison", tagline: "Editorial. Serif-forward. Slow reveal.", best: "Beauty, Jewelry, Fashion" },
-  { id: "minimal", name: "Blanc", tagline: "White space, precise typography.", best: "Home, Furniture, Objects" },
-  { id: "modern", name: "Kinetic", tagline: "Bold hero, product-first.", best: "Electronics, Fashion" },
-  { id: "marketplace", name: "Bazaar", tagline: "Dense grids, category-driven.", best: "Food, Marketplaces, Services" },
+  {
+    id: "luxury",
+    name: "Maison",
+    tagline: "Editorial. Serif-forward. Slow reveal.",
+    best: "Beauty, Jewelry, Fashion",
+  },
+  {
+    id: "minimal",
+    name: "Blanc",
+    tagline: "White space, precise typography.",
+    best: "Home, Furniture, Objects",
+  },
+  {
+    id: "modern",
+    name: "Kinetic",
+    tagline: "Bold hero, product-first.",
+    best: "Electronics, Fashion",
+  },
+  {
+    id: "marketplace",
+    name: "Bazaar",
+    tagline: "Dense grids, category-driven.",
+    best: "Food, Marketplaces, Services",
+  },
 ];
 
 export const currencySymbol = (code: string) =>
@@ -116,6 +148,7 @@ export function defaultStoreConfig(): StoreConfig {
     description: "",
     targetAudience: "",
     designStyle: "minimal",
+    brandPersonality: "minimalist",
     template: "luxury",
     primaryColor: "#1c1917",
     secondaryColor: "#7c6f5d",

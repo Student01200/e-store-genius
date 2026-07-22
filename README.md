@@ -57,18 +57,18 @@ Built with **TanStack Start v1**, **React 19**, **Tailwind v4**, and **Lovable C
 
 ## Tech Stack
 
-| Layer | Choice |
-| --- | --- |
-| Framework | TanStack Start v1 (React 19, SSR, file-based routing, server functions) |
-| Build | Vite 8 |
-| Styling | Tailwind CSS v4 with custom theme tokens in `src/styles.css` |
-| UI primitives | Radix UI + shadcn/ui patterns |
-| Backend | Lovable Cloud (Supabase — Postgres, Auth, RLS) |
-| AI | Lovable AI Gateway (`google/gemini-2.5-flash`) |
-| Client state | React hooks + TanStack Query |
-| Forms | React Hook Form + Zod |
-| Notifications | Sonner |
-| Runtime | Cloudflare Workers (via TanStack Start) |
+| Layer         | Choice                                                                  |
+| ------------- | ----------------------------------------------------------------------- |
+| Framework     | TanStack Start v1 (React 19, SSR, file-based routing, server functions) |
+| Build         | Vite 8                                                                  |
+| Styling       | Tailwind CSS v4 with custom theme tokens in `src/styles.css`            |
+| UI primitives | Radix UI + shadcn/ui patterns                                           |
+| Backend       | Lovable Cloud (Supabase — Postgres, Auth, RLS)                          |
+| AI            | Lovable AI Gateway (`google/gemini-2.5-flash`)                          |
+| Client state  | React hooks + TanStack Query                                            |
+| Forms         | React Hook Form + Zod                                                   |
+| Notifications | Sonner                                                                  |
+| Runtime       | Cloudflare Workers (via TanStack Start)                                 |
 
 ---
 
@@ -142,24 +142,25 @@ supabase/
 
 Single table: **`public.stores`** — RLS enabled.
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | uuid PK | `gen_random_uuid()` |
-| `user_id` | uuid | Owner, references `auth.users` |
-| `slug` | text | Unique, used for `/s/:slug` |
-| `name`, `category`, `description`, `target_audience` | text | Identity |
-| `design_style`, `template` | text | Visual system |
-| `primary_color`, `secondary_color`, `logo_url` | text | Branding |
-| `currency`, `language` | text | Localization |
-| `tagline`, `hero_headline`, `hero_subheadline` | text | Marketing copy (AI-fillable) |
-| `product_categories` | jsonb | `string[]` — legacy, catalog-in-store |
-| `products` | jsonb | `Product[]` — legacy, catalog-in-store |
-| `contact_email`, `contact_phone`, `contact_address` | text | Contact block |
-| `social_instagram`, `social_twitter`, `social_facebook` | text | Social links |
-| `status` | text | `draft` \| `published` |
-| `created_at`, `updated_at` | timestamptz | `update_updated_at_column()` trigger |
+| Column                                                  | Type        | Notes                                  |
+| ------------------------------------------------------- | ----------- | -------------------------------------- |
+| `id`                                                    | uuid PK     | `gen_random_uuid()`                    |
+| `user_id`                                               | uuid        | Owner, references `auth.users`         |
+| `slug`                                                  | text        | Unique, used for `/s/:slug`            |
+| `name`, `category`, `description`, `target_audience`    | text        | Identity                               |
+| `design_style`, `template`                              | text        | Visual system                          |
+| `primary_color`, `secondary_color`, `logo_url`          | text        | Branding                               |
+| `currency`, `language`                                  | text        | Localization                           |
+| `tagline`, `hero_headline`, `hero_subheadline`          | text        | Marketing copy (AI-fillable)           |
+| `product_categories`                                    | jsonb       | `string[]` — legacy, catalog-in-store  |
+| `products`                                              | jsonb       | `Product[]` — legacy, catalog-in-store |
+| `contact_email`, `contact_phone`, `contact_address`     | text        | Contact block                          |
+| `social_instagram`, `social_twitter`, `social_facebook` | text        | Social links                           |
+| `status`                                                | text        | `draft` \| `published`                 |
+| `created_at`, `updated_at`                              | timestamptz | `update_updated_at_column()` trigger   |
 
 **RLS policies (live):**
+
 - `Users manage own stores` — `auth.uid() = user_id` for all operations.
 - `Anyone can view published stores` — `SELECT` for `anon` + `authenticated` when `status = 'published'`.
 
@@ -173,36 +174,35 @@ Initial relational layer:
 
 stores (existing)
 ├── categories
-│   └── store_id, name, slug, position
+│ └── store_id, name, slug, position
 │
 └── products
-    └── store_id, category_id?, name, slug, description,
-        base_price, currency,
-        status [draft | active | archived],
-        seo_title, seo_description
+└── store_id, category_id?, name, slug, description,
+base_price, currency,
+status [draft | active | archived],
+seo_title, seo_description
 
 Future relational e-commerce extensions:
 
-
 products
 ├── product_variants
-│   └── product_id, sku UNIQUE,
-│       price_override?, attributes jsonb
+│ └── product_id, sku UNIQUE,
+│ price_override?, attributes jsonb
 │
 ├── product_images
-│   └── product_id, url, alt, position, is_primary
+│ └── product_id, url, alt, position, is_primary
 │
 └── inventory
-    └── variant_id UNIQUE, quantity,
-        reserved_quantity, low_stock_threshold
-        
+└── variant_id UNIQUE, quantity,
+reserved_quantity, low_stock_threshold
+
 Relationships:
+
 - A product has many product_variants.
 - A product has many product_images.
 - A product_variant has one inventory record.
-        
-Business entities:
 
+Business entities:
 
 customers
 └── store_id, user_id?, email, name, phone,
@@ -229,16 +229,16 @@ Design rules:
 - Time-dependent invariants (for example reserved_quantity <= quantity)
   will be enforced with triggers, not CHECK constraints.
 - Cross-table ownership checks use a SECURITY DEFINER helper
-  public.owns_store(_store_id uuid) to avoid recursive RLS.
-  
+  public.owns_store(\_store_id uuid) to avoid recursive RLS.
+
 **Planned RLS matrix:**
 
-| Table | Store owner | Anon / customer |
-| --- | --- | --- |
-| `categories`, `products`, `product_variants`, `product_images` | Full CRUD when `owns_store(store_id)` | `SELECT` when parent `store.status='published'` AND `product.status='active'` |
-| `inventory` | Owner read/write only | No direct row access; exposed as `in_stock: boolean` via a SECURITY DEFINER function |
-| `customers` | Owner reads own store's customers | Customer reads own row (`user_id = auth.uid()`) |
-| `orders`, `order_items` | Owner reads/writes for own store | Customer reads own orders |
+| Table                                                          | Store owner                           | Anon / customer                                                                      |
+| -------------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------ |
+| `categories`, `products`, `product_variants`, `product_images` | Full CRUD when `owns_store(store_id)` | `SELECT` when parent `store.status='published'` AND `product.status='active'`        |
+| `inventory`                                                    | Owner read/write only                 | No direct row access; exposed as `in_stock: boolean` via a SECURITY DEFINER function |
+| `customers`                                                    | Owner reads own store's customers     | Customer reads own row (`user_id = auth.uid()`)                                      |
+| `orders`, `order_items`                                        | Owner reads/writes for own store      | Customer reads own orders                                                            |
 
 ---
 
@@ -279,6 +279,7 @@ Route: `/generator` (or `/generator?id=…` to edit).
 Throughout every step, a **split-pane live preview** renders `<StorefrontPreview>` with desktop / tablet / mobile toggles.
 
 **Save behavior:**
+
 - **Draft** — Persists to `stores` with `status = 'draft'`.
 - **Publish** — Persists with `status = 'published'`, generates a unique slug (retrying with a random suffix on collision), and toasts the public URL with an "Open" action.
 
@@ -316,15 +317,15 @@ bun run format
 
 Managed automatically by Lovable Cloud — no manual setup required.
 
-| Variable | Where | Purpose |
-| --- | --- | --- |
-| `VITE_SUPABASE_URL` | client + server | Supabase project URL |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | client + server | Anon/publishable key |
-| `VITE_SUPABASE_PROJECT_ID` | client | Project identifier |
-| `SUPABASE_URL` | server | Same URL, server-side reads |
-| `SUPABASE_PUBLISHABLE_KEY` | server | Same key, server-side reads |
-| `SUPABASE_SERVICE_ROLE_KEY` | server | Reserved for privileged admin ops |
-| `LOVABLE_API_KEY` | server | Lovable AI Gateway auth |
+| Variable                        | Where           | Purpose                           |
+| ------------------------------- | --------------- | --------------------------------- |
+| `VITE_SUPABASE_URL`             | client + server | Supabase project URL              |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | client + server | Anon/publishable key              |
+| `VITE_SUPABASE_PROJECT_ID`      | client          | Project identifier                |
+| `SUPABASE_URL`                  | server          | Same URL, server-side reads       |
+| `SUPABASE_PUBLISHABLE_KEY`      | server          | Same key, server-side reads       |
+| `SUPABASE_SERVICE_ROLE_KEY`     | server          | Reserved for privileged admin ops |
+| `LOVABLE_API_KEY`               | server          | Lovable AI Gateway auth           |
 
 ---
 
@@ -393,14 +394,15 @@ Deferred to later Phase 1 sub-steps or later phases:
 - Inventory quantity, stock tracking, and product variants
 - Multi-image galleries
 
-
 ### Phase 2 — Inventory Management
+
 - `inventory` table per variant (`quantity`, `reserved_quantity`, `low_stock_threshold`).
 - `adjust_inventory(variant_id, delta, reason)` RPC with row-level locking.
 - Low-stock alerts on the dashboard.
 - Automatic decrement on order confirmation, restock on cancellation.
 
 ### Phase 3 — Customer Shopping Experience
+
 - Client cart in `localStorage`, keyed by store slug.
 - Server-side price + stock revalidation before checkout.
 - Public product-detail route `/s/:slug/p/:productSlug`, cart route, checkout route.
@@ -408,18 +410,21 @@ Deferred to later Phase 1 sub-steps or later phases:
 - Signed-in customers get an account order history at `/account/orders`.
 
 ### Phase 4 — Order Management
+
 - `orders` + `order_items` with six-state enum (`pending`, `confirmed`, `preparing`, `shipped`, `delivered`, `cancelled`).
 - Owner dashboard: filters, status transitions, order timeline.
 - Trigger-enforced state machine.
 - Stripe webhook route `api/public/webhooks/stripe.ts` (signature-verified) for payment + fulfillment events.
 
 ### Phase 5 — Business Management
+
 - Customer history per store.
 - Analytics dashboard: revenue by day, top products, AOV, conversion.
 - Sales reports with CSV export (server fn).
 - Consolidated store settings page.
 
 ### Beyond the e-commerce stage
+
 - 🖼️ Media uploads for logos + hero images (same Storage bucket pattern).
 - 🏷️ Custom domains per store.
 - 👤 Full user profiles (avatar, display name, preferences).
@@ -433,6 +438,7 @@ Deferred to later Phase 1 sub-steps or later phases:
 ## Project Status
 
 MVP completed:
+
 - AI storefront generation
 - Authentication
 - Store publishing
@@ -440,6 +446,7 @@ MVP completed:
 - Relational product management foundation
 
 Next milestones:
+
 - Relational catalog
 - Inventory
 - Checkout
@@ -450,4 +457,3 @@ Next milestones:
 ## License
 
 Proprietary — portfolio / demo project.
-

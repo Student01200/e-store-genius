@@ -23,9 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const Route = createFileRoute(
-  "/_authenticated/stores/$storeId/products/",
-)({
+export const Route = createFileRoute("/_authenticated/stores/$storeId/products/")({
   component: ProductsPage,
 });
 
@@ -65,10 +63,7 @@ function ProductsPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    Promise.all([
-      listProducts({ data: { storeId } }),
-      listCategories({ data: { storeId } }),
-    ])
+    Promise.all([listProducts({ data: { storeId } }), listCategories({ data: { storeId } })])
       .then(([p, c]) => {
         if (cancelled) return;
         setProducts(p as Product[]);
@@ -89,7 +84,7 @@ function ProductsPage() {
 
   const categoryName = useMemo(() => {
     const map = new Map(categories.map((c) => [c.id, c.name]));
-    return (id: string | null) => (id ? map.get(id) ?? "—" : "—");
+    return (id: string | null) => (id ? (map.get(id) ?? "—") : "—");
   }, [categories]);
 
   const filtered = useMemo(() => {
@@ -111,9 +106,7 @@ function ProductsPage() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-serif text-2xl italic">Products</h2>
-          <p className="text-sm text-ink/50">
-            {loading ? "Loading…" : `${products.length} total`}
-          </p>
+          <p className="text-sm text-ink/50">{loading ? "Loading…" : `${products.length} total`}</p>
         </div>
         <Button
           asChild
@@ -132,8 +125,13 @@ function ProductsPage() {
           placeholder="Search by name, SKU, or slug"
           className="max-w-xs"
         />
-        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}>
-          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+        <Select
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as typeof statusFilter)}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="active">Active</SelectItem>
@@ -142,11 +140,15 @@ function ProductsPage() {
           </SelectContent>
         </Select>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-48">
+            <SelectValue />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All categories</SelectItem>
             {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              <SelectItem key={c.id} value={c.id}>
+                {c.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>

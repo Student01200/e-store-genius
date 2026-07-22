@@ -6,32 +6,38 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { StorefrontPreview } from "@/components/storefront-preview";
 import { generateStoreContent } from "@/lib/ai-generate.functions";
+import { syncStoreCatalog } from "@/lib/catalog-sync";
 import {
   CATEGORIES,
   CURRENCIES,
-  DESIGN_STYLES,
+  BRAND_PERSONALITIES,
   LANGUAGES,
   TEMPLATES,
   categoryDefaults,
   defaultStoreConfig,
   type StoreConfig,
   type TemplateId,
+  type BrandPersonality,
 } from "@/lib/store-config";
 
 function slugify(name: string) {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60) || "store";
+  return (
+    name
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "store"
+  );
 }
 
 const searchSchema = z.object({ id: z.string().optional() });
 
 export const Route = createFileRoute("/_authenticated/generator")({
   validateSearch: (s) => searchSchema.parse(s),
-  head: () => ({ meta: [{ title: "Generator · Atelier" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "Generator · Atelier" }, { name: "robots", content: "noindex" }],
+  }),
   component: Generator,
 });
 
@@ -62,7 +68,7 @@ function Generator() {
           category: String(config.category),
           description: config.description,
           targetAudience: config.targetAudience,
-          designStyle: config.designStyle,
+          brandPersonality: config.brandPersonality,
           currency: config.currency,
         },
       });
@@ -71,7 +77,9 @@ function Generator() {
         tagline: result.tagline || c.tagline,
         heroHeadline: result.heroHeadline || c.heroHeadline,
         heroSubheadline: result.heroSubheadline || c.heroSubheadline,
-        productCategories: result.productCategories.length ? result.productCategories : c.productCategories,
+        productCategories: result.productCategories.length
+          ? result.productCategories
+          : c.productCategories,
         products: result.products.length
           ? result.products.map((p, i) => ({
               ...p,
@@ -89,34 +97,80 @@ function Generator() {
 
   useEffect(() => {
     if (!id) return;
-    supabase.from("stores").select("*").eq("id", id).single().then(({ data, error }) => {
-      if (error || !data) return;
-      setConfig({
-        id: data.id,
-        name: data.name,
-        category: data.category,
-        description: data.description ?? "",
-        targetAudience: data.target_audience ?? "",
-        designStyle: (data.design_style as StoreConfig["designStyle"]) ?? "minimal",
-        template: (data.template as TemplateId) ?? "luxury",
-        primaryColor: data.primary_color,
-        secondaryColor: data.secondary_color,
-        logoUrl: data.logo_url ?? undefined,
-        currency: data.currency,
-        language: data.language,
-        tagline: data.tagline ?? "",
-        heroHeadline: data.hero_headline ?? "",
-        heroSubheadline: data.hero_subheadline ?? "",
-        productCategories: (data.product_categories as unknown as string[]) ?? [],
-        products: (data.products as unknown as StoreConfig["products"]) ?? [],
-        contactEmail: data.contact_email ?? "",
-        contactPhone: data.contact_phone ?? "",
-        contactAddress: data.contact_address ?? "",
-        socialInstagram: data.social_instagram ?? "",
-        socialTwitter: data.social_twitter ?? "",
-        socialFacebook: data.social_facebook ?? "",
+    supabase
+      .from("stores")
+      .select("*")
+      .eq("id", id)
+      .single()
+      .then(async ({ data, error }) => {
+        if (error || !data) return;
+
+        let productCategories = (data.product_categories as unknown as string[]) ?? [];
+        let products = (data.products as unknown as StoreConfig["products"]) ?? [];
+
+        if (data.catalog_source === "relational") {
+          try {
+            const { data: dbCats } = await supabase
+              .from("categories")
+              .select("id, name")
+              .eq("store_id", data.id)
+              .order("position");
+
+            const { data: dbProds } = await supabase
+              .from("products")
+              .select("id, name, base_price, image_url, category_id, description")
+              .eq("store_id", data.id)
+              .eq("status", "active")
+              .order("position");
+
+            if (dbCats && dbCats.length > 0) {
+              productCategories = dbCats.map((c) => c.name);
+              if (dbProds) {
+                const catMap = new Map(dbCats.map((c) => [c.id, c.name]));
+                products = dbProds.map((p) => ({
+                  id: p.id,
+                  name: p.name,
+                  price: Number(p.base_price),
+                  image: p.image_url ?? undefined,
+                  category: p.category_id ? (catMap.get(p.category_id) ?? undefined) : undefined,
+                  description: p.description ?? undefined,
+                }));
+              } else {
+                products = [];
+              }
+            }
+          } catch (e) {
+            console.error("Failed to load relational catalog, falling back to JSONB:", e);
+          }
+        }
+
+        setConfig({
+          id: data.id,
+          name: data.name,
+          category: data.category,
+          description: data.description ?? "",
+          targetAudience: data.target_audience ?? "",
+          designStyle: "minimal",
+          brandPersonality: (data.design_style as BrandPersonality) ?? "minimalist",
+          template: (data.template as TemplateId) ?? "luxury",
+          primaryColor: data.primary_color,
+          secondaryColor: data.secondary_color,
+          logoUrl: data.logo_url ?? undefined,
+          currency: data.currency,
+          language: data.language,
+          tagline: data.tagline ?? "",
+          heroHeadline: data.hero_headline ?? "",
+          heroSubheadline: data.hero_subheadline ?? "",
+          productCategories,
+          products,
+          contactEmail: data.contact_email ?? "",
+          contactPhone: data.contact_phone ?? "",
+          contactAddress: data.contact_address ?? "",
+          socialInstagram: data.social_instagram ?? "",
+          socialTwitter: data.social_twitter ?? "",
+          socialFacebook: data.social_facebook ?? "",
+        });
       });
-    });
   }, [id]);
 
   const update = <K extends keyof StoreConfig>(k: K, v: StoreConfig[K]) =>
@@ -140,7 +194,7 @@ function Generator() {
         category: config.category,
         description: config.description,
         target_audience: config.targetAudience,
-        design_style: config.designStyle,
+        design_style: config.brandPersonality,
         template: config.template,
         primary_color: config.primaryColor,
         secondary_color: config.secondaryColor,
@@ -175,7 +229,11 @@ function Generator() {
         // Ensure unique slug on first insert
         let slug = baseSlug;
         for (let i = 0; i < 3; i++) {
-          const { data: exists } = await supabase.from("stores").select("id").eq("slug", slug).maybeSingle();
+          const { data: exists } = await supabase
+            .from("stores")
+            .select("id")
+            .eq("slug", slug)
+            .maybeSingle();
           if (!exists) break;
           slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
         }
@@ -189,6 +247,27 @@ function Generator() {
         storeSlug = data!.slug ?? null;
         setConfig((c) => ({ ...c, id: storeId }));
       }
+
+      // Sync catalog with relational tables
+      if (storeId) {
+        const syncResult = await syncStoreCatalog(storeId, {
+          ...config,
+          id: storeId,
+        });
+
+        if (syncResult?.products) {
+          setConfig((c) => {
+            const nextProducts = c.products.map((prod) => {
+              const matched = syncResult.products.find(
+                (p) => p.originalId === prod.id,
+              );
+              return matched ? { ...prod, id: matched.dbId } : prod;
+            });
+            return { ...c, products: nextProducts };
+          });
+        }
+      }
+
       if (status === "published" && storeSlug) {
         const url = `${window.location.origin}/s/${storeSlug}`;
         toast.success("Store published", {
@@ -336,21 +415,23 @@ function Generator() {
                       }`}
                     >
                       <p className="font-serif text-lg italic">{t.name}</p>
-                      <p className={`text-[10px] ${config.template === t.id ? "text-canvas/60" : "text-ink/50"}`}>
+                      <p
+                        className={`text-[10px] ${config.template === t.id ? "text-canvas/60" : "text-ink/50"}`}
+                      >
                         {t.tagline}
                       </p>
                     </button>
                   ))}
                 </div>
               </Field>
-              <Field label="Design style">
+              <Field label="Brand Personality">
                 <div className="grid grid-cols-3 gap-2">
-                  {DESIGN_STYLES.map((s) => (
+                  {BRAND_PERSONALITIES.map((s) => (
                     <button
                       key={s.id}
-                      onClick={() => update("designStyle", s.id)}
+                      onClick={() => update("brandPersonality", s.id)}
                       className={`rounded-lg border p-2 text-xs font-medium ${
-                        config.designStyle === s.id
+                        config.brandPersonality === s.id
                           ? "border-ink bg-ink text-canvas"
                           : "border-ink/10 hover:bg-ink/5"
                       }`}
@@ -429,7 +510,9 @@ function Generator() {
                     className="w-full rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm"
                   >
                     {CURRENCIES.map((c) => (
-                      <option key={c.code} value={c.code}>{c.symbol} {c.code}</option>
+                      <option key={c.code} value={c.code}>
+                        {c.symbol} {c.code}
+                      </option>
                     ))}
                   </select>
                 </Field>
@@ -440,7 +523,9 @@ function Generator() {
                     className="w-full rounded-lg border border-ink/10 bg-white px-3 py-2 text-sm"
                   >
                     {LANGUAGES.map((l) => (
-                      <option key={l.code} value={l.code}>{l.label}</option>
+                      <option key={l.code} value={l.code}>
+                        {l.label}
+                      </option>
                     ))}
                   </select>
                 </Field>
@@ -451,7 +536,10 @@ function Generator() {
                   onChange={(e) =>
                     update(
                       "productCategories",
-                      e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                      e.target.value
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
                     )
                   }
                   className="w-full rounded-lg border border-ink/10 px-3 py-2 text-sm outline-none focus:border-ink"
@@ -482,7 +570,10 @@ function Generator() {
                       />
                       <button
                         onClick={() =>
-                          update("products", config.products.filter((_, j) => j !== i))
+                          update(
+                            "products",
+                            config.products.filter((_, j) => j !== i),
+                          )
                         }
                         className="text-xs text-ink/40 hover:text-destructive"
                       >

@@ -77,10 +77,7 @@ export const deleteCategory = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((raw: unknown) => DeleteInput.parse(raw))
   .handler(async ({ data, context }) => {
-    const { error } = await (context.supabase as any)
-      .from("categories")
-      .delete()
-      .eq("id", data.id);
+    const { error } = await (context.supabase as any).from("categories").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });

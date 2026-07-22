@@ -30,14 +30,24 @@ function Landing() {
   return (
     <div className="min-h-screen bg-canvas text-ink">
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
-        <Link to="/" className="font-serif text-2xl italic tracking-tight">Atelier</Link>
+        <Link to="/" className="font-serif text-2xl italic tracking-tight">
+          Atelier
+        </Link>
         <nav className="hidden gap-8 text-sm text-ink/60 md:flex">
-          <a href="#templates" className="hover:text-ink">Templates</a>
-          <a href="#how" className="hover:text-ink">How it works</a>
-          <a href="#pricing" className="hover:text-ink">Pricing</a>
+          <a href="#templates" className="hover:text-ink">
+            Templates
+          </a>
+          <a href="#how" className="hover:text-ink">
+            How it works
+          </a>
+          <a href="#pricing" className="hover:text-ink">
+            Pricing
+          </a>
         </nav>
         <div className="flex items-center gap-3">
-          <Link to="/auth" className="text-sm text-ink/70 hover:text-ink">Sign in</Link>
+          <Link to="/auth" className="text-sm text-ink/70 hover:text-ink">
+            Sign in
+          </Link>
           <Link
             to="/auth"
             className="rounded-full bg-ink px-4 py-2 text-xs font-semibold uppercase tracking-widest text-canvas hover:bg-ink/90"
@@ -51,12 +61,12 @@ function Landing() {
         <div className="flex flex-col justify-center">
           <p className="eyebrow mb-6">A store studio, not a builder</p>
           <h1 className="font-serif text-5xl leading-[1.02] tracking-tight md:text-7xl">
-            Generate specialized <em className="italic text-accent">e-commerce</em> stores in minutes.
+            Generate specialized <em className="italic text-accent">e-commerce</em> stores in
+            minutes.
           </h1>
           <p className="mt-6 max-w-lg text-base leading-relaxed text-ink/60">
-            Describe your brand once. Atelier composes a complete storefront —
-            homepage, product pages, cart, checkout, FAQ — tailored to your
-            category, your palette, and your voice.
+            Describe your brand once. Atelier composes a complete storefront — homepage, product
+            pages, cart, checkout, FAQ — tailored to your category, your palette, and your voice.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
@@ -111,8 +121,8 @@ function Landing() {
               <h2 className="mt-3 font-serif text-4xl md:text-5xl">Four points of view.</h2>
             </div>
             <p className="hidden max-w-sm text-sm text-ink/60 md:block">
-              Each template is a full storefront system — nav, hero, listings, PDP,
-              cart, checkout, about, contact, FAQ — tuned to a distinct voice.
+              Each template is a full storefront system — nav, hero, listings, PDP, cart, checkout,
+              about, contact, FAQ — tuned to a distinct voice.
             </p>
           </div>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -158,11 +168,13 @@ function Landing() {
 
       <section id="pricing" className="border-t border-ink/5 bg-ink py-24 text-canvas">
         <div className="mx-auto max-w-4xl px-6 text-center">
-          <p className="eyebrow" style={{ color: "#ffffff70" }}>Ready when you are</p>
+          <p className="eyebrow" style={{ color: "#ffffff70" }}>
+            Ready when you are
+          </p>
           <h2 className="mt-4 font-serif text-4xl md:text-5xl">Open your studio.</h2>
           <p className="mx-auto mt-4 max-w-md text-sm text-canvas/70">
-            Free during preview. Generate as many stores as you need — publish
-            when the palette feels right.
+            Free during preview. Generate as many stores as you need — publish when the palette
+            feels right.
           </p>
           <Link
             to="/auth"

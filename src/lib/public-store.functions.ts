@@ -36,7 +36,7 @@ export const getPublicStore = createServerFn({ method: "GET" })
     const { data: products, error: productError } = await supabase
       .from("products")
       .select(
-        "id, name, slug, base_price, currency, image_url, description, category_id, sku, position"
+        "id, name, slug, base_price, currency, image_url, description, category_id, sku, position",
       )
       .eq("store_id", store.id)
       .eq("status", "active")
@@ -48,5 +48,5 @@ export const getPublicStore = createServerFn({ method: "GET" })
       ...store,
       categories: categories ?? [],
       products: products ?? [],
-    }
+    };
   });

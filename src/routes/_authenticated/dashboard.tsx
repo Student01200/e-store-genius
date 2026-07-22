@@ -18,7 +18,9 @@ type StoreRow = {
 };
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "My Stores · Atelier" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({
+    meta: [{ title: "My Stores · Atelier" }, { name: "robots", content: "noindex" }],
+  }),
   component: Dashboard,
 });
 
@@ -29,7 +31,9 @@ function Dashboard() {
   useEffect(() => {
     supabase
       .from("stores")
-      .select("id,slug,name,category,template,status,currency,primary_color,secondary_color,updated_at")
+      .select(
+        "id,slug,name,category,template,status,currency,primary_color,secondary_color,updated_at",
+      )
       .order("updated_at", { ascending: false })
       .then(({ data, error }) => {
         if (error) toast.error(error.message);
@@ -41,7 +45,10 @@ function Dashboard() {
     const { data: src, error } = await supabase.from("stores").select("*").eq("id", id).single();
     if (error || !src) return toast.error("Could not duplicate");
     const { id: _id, created_at, updated_at, user_id: _u, ...rest } = src;
-    void _id; void created_at; void updated_at; void _u;
+    void _id;
+    void created_at;
+    void updated_at;
+    void _u;
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) return;
     const { error: insertErr } = await supabase.from("stores").insert({
@@ -53,7 +60,12 @@ function Dashboard() {
     if (insertErr) toast.error(insertErr.message);
     else {
       toast.success("Duplicated");
-      const { data } = await supabase.from("stores").select("id,slug,name,category,template,status,currency,primary_color,secondary_color,updated_at").order("updated_at", { ascending: false });
+      const { data } = await supabase
+        .from("stores")
+        .select(
+          "id,slug,name,category,template,status,currency,primary_color,secondary_color,updated_at",
+        )
+        .order("updated_at", { ascending: false });
       setStores(data ?? []);
     }
   }
@@ -99,7 +111,9 @@ function Dashboard() {
                   }}
                 >
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-white/95">
-                    <p className="eyebrow" style={{ color: "#ffffff90" }}>{s.template}</p>
+                    <p className="eyebrow" style={{ color: "#ffffff90" }}>
+                      {s.template}
+                    </p>
                     <p className="mt-2 font-serif text-2xl italic">{s.name}</p>
                   </div>
                 </div>
@@ -107,7 +121,10 @@ function Dashboard() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h3 className="truncate text-sm font-semibold">{s.name}</h3>
-                      <p className="mt-0.5 text-xs text-ink/50">{s.category} · {currencySymbol(s.currency)}{s.currency}</p>
+                      <p className="mt-0.5 text-xs text-ink/50">
+                        {s.category} · {currencySymbol(s.currency)}
+                        {s.currency}
+                      </p>
                     </div>
                     <span
                       className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest ${
@@ -166,8 +183,8 @@ function EmptyState({ onCreate }: { onCreate: () => void }) {
       <p className="eyebrow">No stores yet</p>
       <h2 className="mt-4 font-serif text-4xl italic">Your first storefront awaits.</h2>
       <p className="mt-3 text-sm text-ink/60">
-        Describe your brand and Atelier composes a complete e-commerce site — homepage,
-        catalog, cart, checkout, and more.
+        Describe your brand and Atelier composes a complete e-commerce site — homepage, catalog,
+        cart, checkout, and more.
       </p>
       <button
         onClick={onCreate}

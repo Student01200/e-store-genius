@@ -11,10 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-
-export const Route = createFileRoute(
-  "/_authenticated/stores/$storeId/categories",
-)({
+export const Route = createFileRoute("/_authenticated/stores/$storeId/categories")({
   loader: async ({ params }) => {
     const categories = await listCategories({
       data: {
@@ -30,14 +27,12 @@ export const Route = createFileRoute(
   component: RouteComponent,
 });
 
-
 function RouteComponent() {
   const { categories } = Route.useLoaderData();
   const { storeId } = Route.useParams();
   const router = useRouter();
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
-
 
   async function handleCreate() {
     if (!name.trim()) return;
@@ -59,57 +54,26 @@ function RouteComponent() {
     setSaving(false);
   }
 
-
   return (
     <div className="p-6 space-y-6">
-
-      <h1 className="text-2xl font-semibold">
-        Categories
-      </h1>
-
+      <h1 className="text-2xl font-semibold">Categories</h1>
 
       <div className="flex gap-3">
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Category name" />
 
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Category name"
-        />
-
-
-        <Button
-          onClick={handleCreate}
-          disabled={saving}
-        >
+        <Button onClick={handleCreate} disabled={saving}>
           {saving ? "Saving..." : "Add"}
         </Button>
-
       </div>
 
-
       <div className="space-y-3">
-
-        {categories.map((item: {
-          id: string;
-          name: string;
-          slug: string;
-        }) => (
-
-          <div
-            key={item.id}
-            className="rounded-lg border p-4 flex justify-between"
-          >
-
+        {categories.map((item: { id: string; name: string; slug: string }) => (
+          <div key={item.id} className="rounded-lg border p-4 flex justify-between">
             <div>
-              <p className="font-medium">
-                {item.name}
-              </p>
+              <p className="font-medium">{item.name}</p>
 
-              <p className="text-sm text-muted-foreground">
-                {item.slug}
-              </p>
+              <p className="text-sm text-muted-foreground">{item.slug}</p>
             </div>
-
 
             <Button
               variant="outline"
@@ -125,14 +89,9 @@ function RouteComponent() {
             >
               Delete
             </Button>
-
-
           </div>
-
         ))}
-
       </div>
-
     </div>
   );
 }

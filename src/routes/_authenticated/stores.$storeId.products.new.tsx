@@ -10,9 +10,7 @@ import {
   type ProductFormValues,
 } from "@/components/products/ProductForm";
 
-export const Route = createFileRoute(
-  "/_authenticated/stores/$storeId/products/new",
-)({
+export const Route = createFileRoute("/_authenticated/stores/$storeId/products/new")({
   component: NewProductPage,
 });
 
@@ -25,9 +23,7 @@ function NewProductPage() {
 
   useEffect(() => {
     listCategories({ data: { storeId } })
-      .then((rows: any) =>
-        setCategories(rows.map((r: any) => ({ id: r.id, name: r.name }))),
-      )
+      .then((rows: any) => setCategories(rows.map((r: any) => ({ id: r.id, name: r.name }))))
       .catch(() => toast.error("Failed to load categories"));
   }, [storeId]);
 

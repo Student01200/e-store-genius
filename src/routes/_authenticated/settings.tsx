@@ -52,7 +52,9 @@ function Settings() {
         </section>
 
         <section className="rounded-xl bg-ink p-6 text-canvas">
-          <p className="eyebrow" style={{ color: "#ffffff70" }}>Preview build</p>
+          <p className="eyebrow" style={{ color: "#ffffff70" }}>
+            Preview build
+          </p>
           <p className="mt-2 font-serif text-2xl italic">Everything free during preview.</p>
           <p className="mt-2 text-sm text-canvas/70">
             All templates, unlimited stores, live preview. Pricing arrives with public launch.

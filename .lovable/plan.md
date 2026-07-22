@@ -1,4 +1,3 @@
-
 # Atelier → Real E-Commerce: Architecture & Migration Plan
 
 Analysis + phased plan only. No feature code is written in this step. Existing generator, AI copy, public `/s/:slug` rendering, and RLS on `stores` stay intact and keep working throughout.
@@ -42,10 +41,12 @@ stores (existing)
 ```
 
 Enums:
+
 - `order_status`: `pending | confirmed | preparing | shipped | delivered | cancelled`
 - `product_status`: `draft | active | archived`
 
 Key rules:
+
 - Money as `numeric(12,2)`; every monetary row carries `currency` to avoid cross-store mixing.
 - `slug` unique **per store** (`UNIQUE (store_id, slug)`) so `/s/:storeSlug/p/:productSlug` is collision-free.
 - Inventory is per **variant**, not per product. Products always have ≥1 variant (a "default" variant seeded on create).
@@ -54,12 +55,12 @@ Key rules:
 
 ### RLS model
 
-| Table | Owner (store's user) | Anon / customer |
-|---|---|---|
-| categories, products, product_variants, product_images | full CRUD where `store_id` belongs to `auth.uid()` via `stores` | `SELECT` when parent `store.status='published'` AND `product.status='active'` |
-| inventory | owner read/write only | no direct read; exposed via a `SECURITY DEFINER` function that returns only `in_stock: boolean` |
-| customers | owner reads customers of own store; customer reads own row (`user_id = auth.uid()`) | none |
-| orders, order_items | owner reads/writes for own store; customer reads own orders | none |
+| Table                                                  | Owner (store's user)                                                                | Anon / customer                                                                                 |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| categories, products, product_variants, product_images | full CRUD where `store_id` belongs to `auth.uid()` via `stores`                     | `SELECT` when parent `store.status='published'` AND `product.status='active'`                   |
+| inventory                                              | owner read/write only                                                               | no direct read; exposed via a `SECURITY DEFINER` function that returns only `in_stock: boolean` |
+| customers                                              | owner reads customers of own store; customer reads own row (`user_id = auth.uid()`) | none                                                                                            |
+| orders, order_items                                    | owner reads/writes for own store; customer reads own orders                         | none                                                                                            |
 
 All cross-table ownership checks go through a `SECURITY DEFINER` helper `public.owns_store(_store_id uuid)` to avoid recursive RLS. Every `CREATE TABLE` migration ends with the mandatory `GRANT ... TO authenticated / anon / service_role` block per project rules.
 
@@ -89,6 +90,7 @@ All cross-table ownership checks go through a `SECURITY DEFINER` helper `public.
 ### New files (created phase-by-phase, not now)
 
 **Server functions (`src/lib/*.functions.ts`):**
+
 - `products.functions.ts` — list/get/create/update/delete + slug uniqueness.
 - `categories.functions.ts` — CRUD + reorder.
 - `variants.functions.ts` — CRUD + SKU uniqueness.
@@ -101,6 +103,7 @@ All cross-table ownership checks go through a `SECURITY DEFINER` helper `public.
 - `analytics.functions.ts` — revenue, top products, order counts (owner-only, RLS via `owns_store`).
 
 **Routes (`src/routes/`):**
+
 - `_authenticated/stores.$storeId.products.index.tsx` + `new.tsx` + `$productId.tsx`
 - `_authenticated/stores.$storeId.categories.tsx`
 - `_authenticated/stores.$storeId.inventory.tsx`
@@ -113,6 +116,7 @@ All cross-table ownership checks go through a `SECURITY DEFINER` helper `public.
 - `api/public/webhooks/stripe.ts` (later, Phase 3/4) — signature-verified order updates
 
 **Components (`src/components/`):**
+
 - `products/` — `ProductForm`, `VariantEditor`, `ImageUploader`.
 - `orders/` — `OrderStatusBadge`, `OrderTimeline`.
 - `store/` — `Cart`, `CheckoutForm`, `ProductCard` (real, replacing the sample one).

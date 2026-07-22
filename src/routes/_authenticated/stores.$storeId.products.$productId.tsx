@@ -1,11 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import {
-  getProduct,
-  updateProduct,
-  deleteProduct,
-} from "@/lib/products.functions";
+import { getProduct, updateProduct, deleteProduct } from "@/lib/products.functions";
 import { listCategories } from "@/lib/categories.functions";
 import {
   ProductForm,
@@ -15,9 +11,7 @@ import {
 } from "@/components/products/ProductForm";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const Route = createFileRoute(
-  "/_authenticated/stores/$storeId/products/$productId",
-)({
+export const Route = createFileRoute("/_authenticated/stores/$storeId/products/$productId")({
   component: EditProductPage,
 });
 
@@ -36,10 +30,7 @@ function EditProductPage() {
     let cancelled = false;
     setLoading(true);
     setError(null);
-    Promise.all([
-      getProduct({ data: { id: productId } }),
-      listCategories({ data: { storeId } }),
-    ])
+    Promise.all([getProduct({ data: { id: productId } }), listCategories({ data: { storeId } })])
       .then(([p, c]: any) => {
         if (cancelled) return;
         if (!p) throw new Error("Product not found");
@@ -57,9 +48,7 @@ function EditProductPage() {
           seoTitle: p.seo_title ?? "",
           seoDescription: p.seo_description ?? "",
         });
-        setCategories(
-          (c as any[]).map((x) => ({ id: x.id, name: x.name })),
-        );
+        setCategories((c as any[]).map((x) => ({ id: x.id, name: x.name })));
       })
       .catch((err) => {
         if (cancelled) return;

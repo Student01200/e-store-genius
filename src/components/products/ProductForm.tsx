@@ -87,8 +87,7 @@ export function ProductForm({
     if (!values.name.trim()) e.name = "Name is required";
     if (values.name.length > 200) e.name = "Max 200 characters";
     if (!values.slug.trim()) e.slug = "Slug is required";
-    if (values.basePrice < 0 || Number.isNaN(values.basePrice))
-      e.basePrice = "Enter a valid price";
+    if (values.basePrice < 0 || Number.isNaN(values.basePrice)) e.basePrice = "Enter a valid price";
     if (!values.currency.trim()) e.currency = "Currency is required";
     if (values.imageUrl) {
       try {
@@ -163,9 +162,7 @@ export function ProductForm({
               value={values.basePrice}
               onChange={(e) => set("basePrice", Number(e.target.value))}
             />
-            {errors.basePrice && (
-              <p className="text-xs text-red-600">{errors.basePrice}</p>
-            )}
+            {errors.basePrice && <p className="text-xs text-red-600">{errors.basePrice}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="currency">Currency</Label>
@@ -175,9 +172,7 @@ export function ProductForm({
               onChange={(e) => set("currency", e.target.value.toUpperCase())}
               maxLength={8}
             />
-            {errors.currency && (
-              <p className="text-xs text-red-600">{errors.currency}</p>
-            )}
+            {errors.currency && <p className="text-xs text-red-600">{errors.currency}</p>}
           </div>
         </div>
 
@@ -193,10 +188,7 @@ export function ProductForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="status">Status</Label>
-            <Select
-              value={values.status}
-              onValueChange={(v) => set("status", v as ProductStatus)}
-            >
+            <Select value={values.status} onValueChange={(v) => set("status", v as ProductStatus)}>
               <SelectTrigger id="status">
                 <SelectValue />
               </SelectTrigger>
@@ -248,9 +240,7 @@ export function ProductForm({
             onChange={(e) => set("imageUrl", e.target.value)}
             placeholder="https://…"
           />
-          {errors.imageUrl && (
-            <p className="text-xs text-red-600">{errors.imageUrl}</p>
-          )}
+          {errors.imageUrl && <p className="text-xs text-red-600">{errors.imageUrl}</p>}
         </div>
         {values.imageUrl && !errors.imageUrl && (
           <div className="aspect-square w-40 overflow-hidden rounded-lg bg-ink/5 ring-1 ring-black/5">
@@ -277,9 +267,7 @@ export function ProductForm({
             maxLength={120}
           />
           <p className="text-xs text-ink/40">{values.seoTitle.length}/120</p>
-          {errors.seoTitle && (
-            <p className="text-xs text-red-600">{errors.seoTitle}</p>
-          )}
+          {errors.seoTitle && <p className="text-xs text-red-600">{errors.seoTitle}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="seoDescription">Meta description</Label>
@@ -291,9 +279,7 @@ export function ProductForm({
             maxLength={320}
           />
           <p className="text-xs text-ink/40">{values.seoDescription.length}/320</p>
-          {errors.seoDescription && (
-            <p className="text-xs text-red-600">{errors.seoDescription}</p>
-          )}
+          {errors.seoDescription && <p className="text-xs text-red-600">{errors.seoDescription}</p>}
         </div>
       </section>
 
